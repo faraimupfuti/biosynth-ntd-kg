@@ -1,0 +1,82 @@
+name: NTD Knowledge Graph Pipeline
+
+# Runs the BioSynth NTD pipeline on a schedule, writes ntd_graph.json /
+# ntd_candidates.csv into data/, commits them back to the repo, and also
+# keeps them as a downloadable workflow artifact for 90 days as a backup.
+#
+# SETUP (one-time):
+#   1. Put this file at:            .github/workflows/ntd-kg-pipeline.yml
+#   2. Put the pipeline script at:  scripts/ntd_kg_pipeline.py
+#   3. Put requirements at:         scripts/requirements.txt
+#   4. Repo Settings -> Actions -> General -> Workflow permissions ->
+#      set to "Read and write permissions" (needed for the auto-commit step).
+#   5. Push to GitHub, then trigger a manual test run from the Actions tab
+#      ("Run workflow" button) before waiting for the schedule.
+#
+# No API keys/secrets are needed — Open Targets and ChEMBL are public,
+# unauthenticated APIs.
+
+on:
+  workflow_dispatch:      # manual "Run workflow" button in the Actions tab
+    inputs:
+      diseases:
+        description: 'Space-separated disease names (blank = all 21 NTDs)'
+        required: false
+        default: ''
+      include_ntd_screens:
+        description: 'Also pull ChEMBL-NTD phenotypic screening hits (slower)'
+        type: boolean
+        default: false
+  schedule:
+    - cron: '0 6 * * 1'   # every Monday 06:00 UTC — adjust to taste
+
+permissions:
+  contents: write         # required so the workflow can commit data/ back
+
+jobs:
+  build-graph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60    # the full 21-disease pull can take a while; adjust if you see timeouts
+
+    steps:
+      - name: Check out repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Run pipeline
+        id: run
+        run: |
+          mkdir -p data
+          ARGS=""
+          if [ -n "${{ github.event.inputs.diseases }}" ]; then
+            ARGS="$ARGS --diseases ${{ github.event.inputs.diseases }}"
+          fi
+          if [ "${{ github.event.inputs.include_ntd_screens }}" = "true" ]; then
+            ARGS="$ARGS --include-ntd-screens"
+          fi
+          python scripts/ntd_kg_pipeline.py \
+            --out data/ntd_graph.json \
+            --csv data/ntd_candidates.csv \
+            $ARGS
+
+      - name: Upload as workflow artifact (backup / review before merge)
+        uses: actions/upload-artifact@v4
+        with:
+          name: ntd-graph-${{ github.run_number }}
+          path: |
+            data/ntd_graph.json
+            data/ntd_candidates.csv
+          retention-days: 90
+
+      - name: Commit updated graph data
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: refresh NTD knowledge graph data [automated]"
+          file_pattern: "data/ntd_graph.json data/ntd_candidates.csv"
