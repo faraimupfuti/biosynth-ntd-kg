@@ -20,7 +20,7 @@ on:
   workflow_dispatch:      # manual "Run workflow" button in the Actions tab
     inputs:
       diseases:
-        description: 'Space-separated disease names (blank = all 21 NTDs)'
+        description: 'Comma-separated disease names (blank = all 21 NTDs). Multi-word names are fine here, e.g. "Chagas disease,Dengue"'
         required: false
         default: ''
       include_ntd_screens:
@@ -52,16 +52,23 @@ jobs:
 
       - name: Run pipeline
         id: run
+        env:
+          # Passed as an env var (not interpolated straight into the run
+          # script) specifically so a multi-word value like "Chagas disease"
+          # can't get word-split by the shell before Python sees it — that
+          # exact bug produced a broken graph on the first live run.
+          DISEASES_INPUT: ${{ github.event.inputs.diseases }}
+          INCLUDE_SCREENS: ${{ github.event.inputs.include_ntd_screens }}
         run: |
           mkdir -p data
           ARGS=""
-          if [ -n "${{ github.event.inputs.diseases }}" ]; then
-            ARGS="$ARGS --diseases ${{ github.event.inputs.diseases }}"
+          if [ -n "$DISEASES_INPUT" ]; then
+            ARGS="$ARGS --diseases-csv \"$DISEASES_INPUT\""
           fi
-          if [ "${{ github.event.inputs.include_ntd_screens }}" = "true" ]; then
+          if [ "$INCLUDE_SCREENS" = "true" ]; then
             ARGS="$ARGS --include-ntd-screens"
           fi
-          python scripts/ntd_kg_pipeline.py \
+          eval python scripts/ntd_kg_pipeline.py \
             --out data/ntd_graph.json \
             --csv data/ntd_candidates.csv \
             $ARGS
