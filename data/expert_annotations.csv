@@ -1,0 +1,6 @@
+drug,patent_status,eml_listed,resistance_notes,manufacturing_notes
+Ivermectin,off-patent (generic, widely available),True,,Multiple generic manufacturers; donated globally via the Mectizan Donation Program
+Albendazole,off-patent (generic, widely available),True,,Multiple generic manufacturers
+Miltefosine,off-patent since 2019,True,Documented resistance in some Indian visceral leishmaniasis isolates,Limited manufacturer base despite off-patent status
+Praziquantel,off-patent (generic, widely available),True,,Multiple generic manufacturers
+Fexinidazole,,True,,DNDi-coordinated single-source production as of last review
