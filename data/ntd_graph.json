@@ -1,0 +1,134 @@
+{
+  "nodes": [
+    {
+      "id": "Chagas",
+      "type": "disease"
+    },
+    {
+      "id": "AGTR1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "MME",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "ADRB1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "IL6",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "TNF",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "disease",
+      "type": "disease"
+    },
+    {
+      "id": "FGFR3",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "NF1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "FGFR2",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "COL1A1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "CFTR",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    }
+  ],
+  "links": [
+    {
+      "source": "Chagas",
+      "target": "AGTR1",
+      "kind": "associated",
+      "score": 0.2591678730976471
+    },
+    {
+      "source": "Chagas",
+      "target": "MME",
+      "kind": "associated",
+      "score": 0.25907547813397597
+    },
+    {
+      "source": "Chagas",
+      "target": "ADRB1",
+      "kind": "associated",
+      "score": 0.25870589827929125
+    },
+    {
+      "source": "Chagas",
+      "target": "IL6",
+      "kind": "associated",
+      "score": 0.013163189920276768
+    },
+    {
+      "source": "Chagas",
+      "target": "TNF",
+      "kind": "associated",
+      "score": 0.012908157855411651
+    },
+    {
+      "source": "disease",
+      "target": "FGFR3",
+      "kind": "associated",
+      "score": 0.932533889974108
+    },
+    {
+      "source": "disease",
+      "target": "NF1",
+      "kind": "associated",
+      "score": 0.9279840648498103
+    },
+    {
+      "source": "disease",
+      "target": "FGFR2",
+      "kind": "associated",
+      "score": 0.927796575377753
+    },
+    {
+      "source": "disease",
+      "target": "COL1A1",
+      "kind": "associated",
+      "score": 0.9267209576400051
+    },
+    {
+      "source": "disease",
+      "target": "CFTR",
+      "kind": "associated",
+      "score": 0.926123040469691
+    }
+  ]
+}
