@@ -34,6 +34,29 @@ bio-data APIs instead of a hand-typed dataset:
     on tdrtargets.org, export to CSV/TSV, and pass it via --tdr-csv so it
     gets merged into the graph. See load_tdr_targets_csv() below.
 
+  - openFDA Drug Labels + Adverse Events (--include-clinical-evidence) —
+    boxed warnings, contraindications, and dosing pulled from the actual
+    FDA-approved label (SPL), plus a serious-adverse-event report count
+    from FAERS. https://api.fda.gov/drug/label.json and .../drug/event.json
+    openFDA's own docs are explicit that this data is NOT validated for
+    clinical use and should not inform medical care decisions — treat it
+    the same way here: a flag for a human reviewer to look closer, never a
+    number folded silently into the priority score.
+
+  - ClinicalTrials.gov API v2 (--include-clinical-evidence) — whether this
+    EXACT drug-disease pair has ever been registered as a trial, at what
+    phase, and whether results were posted. This is deliberately kept
+    separate from ChEMBL's max_phase, which only reflects the drug's
+    ORIGINAL indication — a drug at Phase 4 for cancer can easily have zero
+    trials for an NTD, and that gap is exactly the signal a reviewer needs.
+    https://clinicaltrials.gov/api/v2/studies
+
+  NOT INTEGRATED: DrugBank. Free access only covers browsing/academic
+  downloads; API access and any commercial use require a paid license
+  negotiated directly with DrugBank — there is no self-serve commercial
+  tier. Worth asking their team about the "internal research use" carve-out
+  before assuming a full license is needed.
+
 Output: a JSON graph (nodes/links) in the same schema the BioSynth demo
 front-end (biosynth-ntd-knowledge-graph.html) consumes, plus a CSV of
 scored drug-target-disease triples for review in a spreadsheet.
@@ -42,7 +65,8 @@ USAGE
 -----
     pip install requests networkx
     python ntd_kg_pipeline.py --out ntd_graph.json --csv ntd_candidates.csv \
-        --include-ntd-screens --tdr-csv path/to/tdrtargets_export.csv
+        --include-ntd-screens --include-clinical-evidence \
+        --tdr-csv path/to/tdrtargets_export.csv
 
 This machine's sandbox has outbound network access disabled, so this script
 has not been run against the live APIs here — run it locally / on a server
@@ -51,10 +75,13 @@ current API docs as of Aug 2026.
 
 NOTE ON SCOPE
 -------------
-This pulls target-disease association evidence and known drug-target links.
-It does NOT do de novo structure-based target discovery (docking, AlphaFold-based
-pocket detection, etc.) — that is a separate, heavier pipeline stage. See the
-"NEXT STAGES" notes at the bottom of this file.
+This pulls target-disease association evidence and known drug-target links,
+plus (optionally) real-world safety/trial signals. It does NOT do de novo
+structure-based target discovery (docking, AlphaFold-based pocket
+detection, etc.), and it is NOT a clinical decision tool — see the
+"NEXT STAGES" notes at the bottom of this file for what real clinical-grade
+validation would still require (wet-lab work, regulatory review, expert
+pharmacology review of every flagged candidate).
 """
 
 import argparse
@@ -70,6 +97,8 @@ import requests
 
 OT_URL = "https://api.platform.opentargets.org/api/v4/graphql"
 CHEMBL_URL = "https://www.ebi.ac.uk/chembl/api/data"
+OPENFDA_URL = "https://api.fda.gov"
+CTGOV_URL = "https://clinicaltrials.gov/api/v2/studies"
 
 # The 21 WHO-listed NTDs (2024 roadmap list). Free-text names — resolved to
 # Open Targets disease IDs (EFO/MONDO/Orphanet) at runtime via search, since
@@ -191,6 +220,16 @@ class ScoredCandidate:
     max_phase: float           # 0-4 (maturity/safety proxy — already approved = fast path)
     action_type: str
     priority_score: float = 0.0
+    # --- clinical-evidence fields (only populated with --include-clinical-evidence) ---
+    # Deliberately kept OUT of priority_score — a boxed warning or a missing
+    # trial is a judgment call for a human reviewer, not something to average
+    # into one number where it could get diluted or hidden.
+    boxed_warning: Optional[bool] = None
+    contraindications: Optional[str] = None
+    serious_ae_reports: Optional[int] = None
+    disease_trial_count: Optional[int] = None
+    disease_max_trial_phase: Optional[int] = None
+    disease_trial_has_results: Optional[bool] = None
 
 
 # --------------------------------------------------------------------------
@@ -351,6 +390,88 @@ def _safe_float(v):
 
 
 # --------------------------------------------------------------------------
+# openFDA: drug label flags (dosing/contraindications/boxed warnings) and a
+# serious-adverse-event report count from FAERS. openFDA's own docs state
+# this data is NOT validated for clinical use — we surface it as flags for
+# a human reviewer, never as an input to priority_score.
+# --------------------------------------------------------------------------
+
+def openfda_label_flags(drug_name: str) -> dict:
+    """Best-effort lookup by generic name. Matching is exact-ish (openFDA's
+    Lucene search over openfda.generic_name), so brand names, salts, or
+    naming mismatches with ChEMBL's pref_name will legitimately miss —
+    that's a real coverage gap to be aware of, not a bug to silently paper
+    over with fuzzy matching that could attach the wrong drug's label."""
+    try:
+        r = request_with_retry("GET", f"{OPENFDA_URL}/drug/label.json", params={
+            "search": f'openfda.generic_name:"{drug_name}"', "limit": 1,
+        })
+    except requests.RequestException as e:
+        return {"label_found": False, "lookup_error": str(e)}
+    results = r.json().get("results", [])
+    if not results:
+        return {"label_found": False}
+    label = results[0]
+
+    def first(field):
+        vals = label.get(field)
+        return vals[0][:400] if vals else None
+
+    return {
+        "label_found": True,
+        "boxed_warning": bool(label.get("boxed_warning")),
+        "contraindications": first("contraindications"),
+        "drug_interactions_noted": bool(label.get("drug_interactions")),
+        "dosage_snippet": first("dosage_and_administration"),
+    }
+
+
+def openfda_serious_ae_count(drug_name: str) -> Optional[int]:
+    try:
+        r = request_with_retry("GET", f"{OPENFDA_URL}/drug/event.json", params={
+            "search": f'patient.drug.medicinalproduct:"{drug_name}" AND serious:1',
+            "limit": 1,
+        })
+    except requests.RequestException:
+        return None
+    return r.json().get("meta", {}).get("results", {}).get("total")
+
+
+# --------------------------------------------------------------------------
+# ClinicalTrials.gov v2: has THIS SPECIFIC drug-disease pair ever been
+# registered as a trial? Deliberately separate from ChEMBL's max_phase,
+# which only reflects the drug's ORIGINAL indication — a drug at Phase 4
+# for cancer can have zero trials for an NTD, and that gap matters.
+# --------------------------------------------------------------------------
+
+_CT_PHASE_RANK = {"NA": 0, "EARLY_PHASE1": 1, "PHASE1": 1, "PHASE2": 2,
+                  "PHASE3": 3, "PHASE4": 4}
+
+
+def ct_trials_for_pair(drug_name: str, disease_name: str) -> dict:
+    try:
+        r = request_with_retry("GET", CTGOV_URL, params={
+            "query.term": f"{drug_name} AND {disease_name}",
+            "pageSize": 10,
+            "fields": "protocolSection.designModule.phases,hasResults",
+        })
+    except requests.RequestException as e:
+        return {"trial_count": None, "lookup_error": str(e)}
+    studies = r.json().get("studies", [])
+    phases, has_results = [], False
+    for s in studies:
+        phases.extend(s.get("protocolSection", {}).get("designModule", {}).get("phases", []))
+        if s.get("hasResults"):
+            has_results = True
+    max_phase = max((_CT_PHASE_RANK.get(p, 0) for p in phases), default=0)
+    return {
+        "trial_count": len(studies),
+        "max_trial_phase_for_disease": max_phase,
+        "any_results_posted": has_results,
+    }
+
+
+# --------------------------------------------------------------------------
 # Scoring — same weighted-factor model as the demo front-end, but fed by
 # live association scores + regulatory phase instead of hand-typed numbers.
 # Swap in DisGeNET / patent-status / ATC-based affordability lookups here
@@ -368,7 +489,8 @@ def priority_score(assoc: float, max_phase: float,
 # --------------------------------------------------------------------------
 
 def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
-                 include_ntd_screens: bool = False, tdr_csv: Optional[str] = None):
+                 include_ntd_screens: bool = False, tdr_csv: Optional[str] = None,
+                 include_clinical_evidence: bool = False):
     nodes: dict[str, dict] = {}
     links: list[dict] = []
     candidates: list[ScoredCandidate] = []
@@ -442,12 +564,41 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
                 links.append({"source": d.drug_name, "target": name, "kind": "candidate"})
 
                 mp = _safe_float(d.max_phase) or 0.0
-                candidates.append(ScoredCandidate(
+                candidate = ScoredCandidate(
                     drug=d.drug_name, disease=name, target=t.target_symbol,
                     association_score=t.association_score, max_phase=mp,
                     action_type=d.action_type or "unknown",
                     priority_score=priority_score(t.association_score, mp),
-                ))
+                )
+
+                # Optional real-world safety/trial-evidence lookups. Off by
+                # default because this roughly triples the API calls per
+                # drug (label + FAERS + trials on top of the ChEMBL calls
+                # already made) — enable with --include-clinical-evidence.
+                if include_clinical_evidence:
+                    label = openfda_label_flags(d.drug_name)
+                    candidate.boxed_warning = label.get("boxed_warning")
+                    candidate.contraindications = label.get("contraindications")
+                    candidate.serious_ae_reports = openfda_serious_ae_count(d.drug_name)
+
+                    ct = ct_trials_for_pair(d.drug_name, name)
+                    candidate.disease_trial_count = ct.get("trial_count")
+                    candidate.disease_max_trial_phase = ct.get("max_trial_phase_for_disease")
+                    candidate.disease_trial_has_results = ct.get("any_results_posted")
+
+                    if candidate.boxed_warning:
+                        print(f"    [flag] {d.drug_name} carries an FDA boxed "
+                              f"warning — needs pharmacology review before any "
+                              f"further consideration", file=sys.stderr)
+                    if candidate.disease_trial_count == 0:
+                        print(f"    [note] {d.drug_name} has no registered "
+                              f"trials for {name} — this is an early-stage, "
+                              f"unvalidated repurposing hypothesis", file=sys.stderr)
+
+                    add_node(d.drug_name, type="drug", boxed_warning=candidate.boxed_warning,
+                             disease_trial_count=candidate.disease_trial_count)
+
+                candidates.append(candidate)
 
         # ChEMBL-NTD-style phenotypic hits: compounds active against the
         # whole pathogen with no confirmed target yet. Added as a distinct
@@ -492,6 +643,11 @@ def main():
                      help="top-N Open Targets targets to pull per disease")
     ap.add_argument("--include-ntd-screens", action="store_true",
                      help="also pull ChEMBL-NTD-style phenotypic screening hits per pathogen organism")
+    ap.add_argument("--include-clinical-evidence", action="store_true",
+                     help="also pull openFDA label flags (boxed warnings, contraindications), "
+                          "FAERS serious-adverse-event counts, and ClinicalTrials.gov trial "
+                          "history for this specific drug-disease pair. Roughly triples API "
+                          "calls per drug — off by default.")
     ap.add_argument("--tdr-csv", default=None,
                      help="path to a manually-exported TDR Targets CSV (see load_tdr_targets_csv)")
     ap.add_argument("--list-ntd-deposits", action="store_true",
@@ -514,20 +670,29 @@ def main():
     graph, candidates = build_graph(
         disease_list, top_targets_per_disease=args.top_targets,
         include_ntd_screens=args.include_ntd_screens, tdr_csv=args.tdr_csv,
+        include_clinical_evidence=args.include_clinical_evidence,
     )
 
     with open(args.out, "w") as f:
         json.dump(graph, f, indent=2)
     print(f"wrote graph: {args.out} ({len(graph['nodes'])} nodes, {len(graph['links'])} links)")
 
+    fallback_fields = ["drug", "disease", "target", "association_score", "max_phase",
+                        "action_type", "priority_score", "boxed_warning", "contraindications",
+                        "serious_ae_reports", "disease_trial_count",
+                        "disease_max_trial_phase", "disease_trial_has_results"]
     with open(args.csv, "w", newline="") as f:
-        w = csv.DictWriter(f, fieldnames=list(asdict(candidates[0]).keys()) if candidates else
-                            ["drug", "disease", "target", "association_score",
-                             "max_phase", "action_type", "priority_score"])
+        w = csv.DictWriter(f, fieldnames=list(asdict(candidates[0]).keys()) if candidates
+                            else fallback_fields)
         w.writeheader()
         for c in candidates:
             w.writerow(asdict(c))
     print(f"wrote candidates: {args.csv} ({len(candidates)} rows)")
+    if args.include_clinical_evidence and candidates:
+        flagged = sum(1 for c in candidates if c.boxed_warning)
+        unvalidated = sum(1 for c in candidates if c.disease_trial_count == 0)
+        print(f"  {flagged} candidate(s) carry an FDA boxed warning — review before proceeding")
+        print(f"  {unvalidated} candidate(s) have zero registered trials for their NTD indication")
 
 
 if __name__ == "__main__":
@@ -543,9 +708,10 @@ if __name__ == "__main__":
 #    and a cancer/rare-disease target list, join on target_id to surface
 #    drugs whose target is shared across BioSynth's three focus areas —
 #    that overlap is the single highest-signal repurposing flag.
-# 3. Literature evidence: layer in a PubMed count/recency query per
-#    drug-disease pair (E-utilities API) as the "clinical evidence level"
-#    factor instead of relying on ChEMBL max_phase alone.
+# 3. DONE (--include-clinical-evidence): openFDA labels + FAERS + trial
+#    history for the specific drug-disease pair. Still open: a genuine
+#    literature-evidence factor (PubMed E-utilities count/recency per
+#    drug-disease pair) as a richer signal than trial existence alone.
 # 4. Load into Neo4j: MERGE nodes/relationships from the JSON output using
 #    the neo4j Python driver, or generate a LOAD CSV / apoc.load.json script,
 #    to get real Cypher traversal ("targets shared by >=2 NTDs") instead of
