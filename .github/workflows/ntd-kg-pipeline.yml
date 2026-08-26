@@ -43,6 +43,10 @@ on:
         description: 'Path in this repo to a human-curated expert-annotations CSV (patent status, EML, resistance, manufacturing notes). Leave blank to skip — see scripts/report_generator.py docstring for the expected columns.'
         required: false
         default: ''
+      other_diseases:
+        description: 'Comma-separated cancer/rare-disease names for cross-domain target overlap detection (blank = skip this step entirely). Example: "Breast cancer,Cystic fibrosis"'
+        required: false
+        default: ''
   schedule:
     - cron: '0 6 * * 1'   # every Monday 06:00 UTC — adjust to taste
 
@@ -112,6 +116,24 @@ jobs:
       - name: Generate research brief
         run: python scripts/report_generator.py --csv data/ntd_candidates.csv --out data/ntd_report.md
 
+      - name: Run pipeline for cross-domain comparison diseases
+        if: ${{ github.event.inputs.other_diseases != '' }}
+        env:
+          OTHER_DISEASES: ${{ github.event.inputs.other_diseases }}
+        run: |
+          python scripts/ntd_kg_pipeline.py \
+            --diseases-csv "$OTHER_DISEASES" \
+            --out data/other_graph.json \
+            --csv data/other_candidates.csv
+
+      - name: Detect cross-domain target overlap
+        if: ${{ github.event.inputs.other_diseases != '' }}
+        run: |
+          python scripts/cross_domain_overlap.py \
+            --graph-a data/ntd_graph.json --candidates-a data/ntd_candidates.csv --label-a NTD \
+            --graph-b data/other_graph.json --candidates-b data/other_candidates.csv --label-b Other \
+            --out data/cross_domain_overlap.md
+
       - name: Upload as workflow artifact (backup / review before merge)
         uses: actions/upload-artifact@v4
         with:
@@ -120,10 +142,18 @@ jobs:
             data/ntd_graph.json
             data/ntd_candidates.csv
             data/ntd_report.md
+            data/other_graph.json
+            data/other_candidates.csv
+            data/cross_domain_overlap.md
+          if-no-files-found: ignore
           retention-days: 90
 
       - name: Commit updated graph data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: refresh NTD knowledge graph data [automated]"
-          file_pattern: "data/ntd_graph.json data/ntd_candidates.csv data/ntd_report.md"
+          # Wildcards rather than exact filenames — the cross-domain files
+          # only exist when other_diseases was set this run, and git-add on
+          # an explicit nonexistent path fails the step; a glob just matches
+          # whatever's actually there.
+          file_pattern: "data/*.json data/*.csv data/*.md"
