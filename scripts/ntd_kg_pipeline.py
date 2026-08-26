@@ -205,7 +205,11 @@ def ot_query(query: str, variables: dict) -> dict:
     return payload["data"]
 
 
-def ot_search_disease(name: str) -> Optional[str]:
+def ot_search_disease(name: str) -> Optional[tuple[str, str]]:
+    """Returns (efo_id, matched_name) so callers can see and log exactly what
+    Open Targets resolved the query to — silently trusting a fuzzy free-text
+    match is how a mistyped or malformed disease name turns into a
+    completely unrelated graph (see the Chagas/quoting incident)."""
     q = """
     query search($q: String!) {
       search(queryString: $q, entityNames: ["disease"], page: {index: 0, size: 1}) {
@@ -215,7 +219,9 @@ def ot_search_disease(name: str) -> Optional[str]:
     """
     data = ot_query(q, {"q": name})
     hits = data["search"]["hits"]
-    return hits[0]["id"] if hits else None
+    if not hits:
+        return None
+    return hits[0]["id"], hits[0]["name"]
 
 
 def ot_targets_for_disease(disease_id: str, disease_name: str, top_n: int = 8) -> list[TargetHit]:
@@ -385,11 +391,17 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
 
     for name in disease_names:
         print(f"[disease] resolving: {name}", file=sys.stderr)
-        efo_id = ot_search_disease(name)
-        if not efo_id:
+        resolved = ot_search_disease(name)
+        if not resolved:
             print(f"  no Open Targets match for {name}, skipping", file=sys.stderr)
             continue
-        add_node(name, type="disease")
+        efo_id, matched_name = resolved
+        print(f"  matched -> {matched_name} ({efo_id})", file=sys.stderr)
+        if matched_name.strip().lower() != name.strip().lower():
+            print(f"  [warn] matched name differs from input — verify this is "
+                  f"the disease you meant before trusting this branch of the graph",
+                  file=sys.stderr)
+        add_node(name, type="disease", matched_name=matched_name)
 
         try:
             targets = ot_targets_for_disease(efo_id, name, top_n=top_targets_per_disease)
@@ -465,8 +477,17 @@ def main():
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default="ntd_graph.json", help="graph JSON output path")
     ap.add_argument("--csv", default="ntd_candidates.csv", help="scored candidates CSV path")
-    ap.add_argument("--diseases", nargs="*", default=NTD_NAMES,
-                     help="subset of NTD names to process (default: all 21)")
+    ap.add_argument("--diseases", nargs="*", default=None,
+                     help="subset of NTD names to process, space-separated "
+                          "SINGLE-WORD-SAFE names only (e.g. Dengue Yaws). "
+                          "For multi-word names use --diseases-csv instead — "
+                          "shell/CI word-splitting will silently break multi-word "
+                          "names passed here (see --diseases-csv docstring below).")
+    ap.add_argument("--diseases-csv", default=None,
+                     help="comma-separated disease names, safe for multi-word names "
+                          "and for passing through CI inputs without quoting pitfalls, "
+                          "e.g. --diseases-csv \"Chagas disease,Dengue,Yaws\". "
+                          "Takes precedence over --diseases if both are given.")
     ap.add_argument("--top-targets", type=int, default=5,
                      help="top-N Open Targets targets to pull per disease")
     ap.add_argument("--include-ntd-screens", action="store_true",
@@ -483,8 +504,15 @@ def main():
         print("\nFull list + downloads: https://chembl.gitbook.io/chembl-ntd/downloads")
         return
 
+    if args.diseases_csv:
+        disease_list = [d.strip() for d in args.diseases_csv.split(",") if d.strip()]
+    elif args.diseases:
+        disease_list = args.diseases
+    else:
+        disease_list = NTD_NAMES
+
     graph, candidates = build_graph(
-        args.diseases, top_targets_per_disease=args.top_targets,
+        disease_list, top_targets_per_disease=args.top_targets,
         include_ntd_screens=args.include_ntd_screens, tdr_csv=args.tdr_csv,
     )
 
