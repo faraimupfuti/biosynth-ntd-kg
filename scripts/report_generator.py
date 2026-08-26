@@ -117,6 +117,20 @@ def generate_report(candidates: list[dict], top_n: int = 15) -> str:
             lines.append(f"- **Contraindications (label excerpt):** {c.get('contraindications')}")
         if c.get("serious_ae_reports", "") not in ("", None):
             lines.append(f"- **Serious adverse event reports (FAERS):** {c.get('serious_ae_reports')}")
+        if c.get("storage_requires_cold_chain", "") not in ("", None):
+            lines.append(f"- **Requires cold-chain storage:** {c.get('storage_requires_cold_chain')}")
+        if c.get("pubmed_result_count", "") not in ("", None):
+            lines.append(f"- **PubMed publications (drug + disease):** {c.get('pubmed_result_count')}")
+        if c.get("disease_burden_estimate"):
+            lines.append(f"- **Disease burden (WHO GHO):** {c.get('disease_burden_estimate')}")
+        if c.get("patent_status"):
+            lines.append(f"- **Patent status (expert-curated):** {c.get('patent_status')}")
+        if c.get("eml_listed", "") not in ("", None):
+            lines.append(f"- **WHO Essential Medicines List:** {c.get('eml_listed')}")
+        if c.get("resistance_notes"):
+            lines.append(f"- **Resistance notes (expert-curated):** {c.get('resistance_notes')}")
+        if c.get("manufacturing_notes"):
+            lines.append(f"- **Manufacturing notes (expert-curated):** {c.get('manufacturing_notes')}")
         lines.append("")
 
     lines.append("---")

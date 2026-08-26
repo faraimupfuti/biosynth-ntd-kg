@@ -57,6 +57,40 @@ bio-data APIs instead of a hand-typed dataset:
   tier. Worth asking their team about the "internal research use" carve-out
   before assuming a full license is needed.
 
+  - PubMed E-utilities (--include-literature) — publication count/recency
+    per drug-disease pair, as a real evidence-level signal that catches
+    candidates with genuine preclinical/literature support before they've
+    reached a registered trial. https://eutils.ncbi.nlm.nih.gov/entrez/eutils/
+
+  - WHO Global Health Observatory OData API (--include-burden) — disease
+    burden (reported case counts / people requiring treatment) per NTD,
+    resolved dynamically by searching indicator names rather than
+    hardcoding indicator codes that could silently go stale.
+    https://ghoapi.azureedge.net/api/ — free, no auth.
+
+  - openFDA storage/handling (bundled into --include-clinical-evidence,
+    no extra API call) — the label lookup already fetches this field; we
+    just weren't reading it. Cold-chain requirements matter specifically
+    for NTDs, where deployment is disproportionately rural/tropical.
+
+  NOT INTEGRATED AS LIVE APIs — patent status, WHO Essential Medicines List
+  membership, pathogen drug-resistance data, and manufacturing cost/
+  feasibility. None of these have a clean, free, queryable API:
+  WIPO PatentScope's programmatic access is a paid SOAP service (2,000 CHF/
+  year); resistance surveillance lives in WHO PDF reports and scattered
+  literature; manufacturing cost data lives in Global Fund/MSF Access
+  Campaign reports read by people, not machines. Building a fake
+  integration against any of these would produce false confidence exactly
+  where the most caution is needed. Instead, see --expert-annotations-csv
+  and load_expert_annotations() below: a human curates these fields, the
+  pipeline merges them in, same honest pattern as --tdr-csv.
+
+  ALSO NOT INTEGRATED, DELIBERATELY: ADMET data beyond what's on the
+  approved label. There's no reasonable way to curate this speculatively
+  per repurposing candidate — it's a genuine wet-lab/computational-chemistry
+  question, not a data-integration one. Flagging that plainly here rather
+  than building an empty placeholder that would look like coverage.
+
 Output: a JSON graph (nodes/links) in the same schema the BioSynth demo
 front-end (biosynth-ntd-knowledge-graph.html) consumes, plus a CSV of
 scored drug-target-disease triples for review in a spreadsheet.
@@ -99,6 +133,8 @@ OT_URL = "https://api.platform.opentargets.org/api/v4/graphql"
 CHEMBL_URL = "https://www.ebi.ac.uk/chembl/api/data"
 OPENFDA_URL = "https://api.fda.gov"
 CTGOV_URL = "https://clinicaltrials.gov/api/v2/studies"
+PUBMED_URL = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
+GHO_URL = "https://ghoapi.azureedge.net/api"
 
 # The 21 WHO-listed NTDs (2024 roadmap list). Free-text names — resolved to
 # Open Targets disease IDs (EFO/MONDO/Orphanet) at runtime via search, since
@@ -230,6 +266,16 @@ class ScoredCandidate:
     disease_trial_count: Optional[int] = None
     disease_max_trial_phase: Optional[int] = None
     disease_trial_has_results: Optional[bool] = None
+    # --- literature / burden (--include-literature, --include-burden) ---
+    pubmed_result_count: Optional[int] = None
+    disease_burden_estimate: Optional[str] = None  # kept as text: WHO reports mix units/years
+    # --- storage (bundled into openFDA label lookup above) ---
+    storage_requires_cold_chain: Optional[bool] = None
+    # --- expert-curated overlay (--expert-annotations-csv) ---
+    patent_status: Optional[str] = None
+    eml_listed: Optional[bool] = None
+    resistance_notes: Optional[str] = None
+    manufacturing_notes: Optional[str] = None
 
 
 # --------------------------------------------------------------------------
@@ -423,6 +469,15 @@ def openfda_label_flags(drug_name: str) -> dict:
         "contraindications": first("contraindications"),
         "drug_interactions_noted": bool(label.get("drug_interactions")),
         "dosage_snippet": first("dosage_and_administration"),
+        # Cold-chain matters disproportionately for NTDs given where they're
+        # deployed — crude heuristic (label mentions refrigeration/freezing),
+        # not a substitute for actually reading the storage section.
+        "requires_cold_chain": bool(
+            label.get("storage_and_handling") and any(
+                kw in (label["storage_and_handling"][0] or "").lower()
+                for kw in ("refrigerat", "2°c", "2-8", "freez", "do not store above 25")
+            )
+        ),
     }
 
 
@@ -472,6 +527,104 @@ def ct_trials_for_pair(drug_name: str, disease_name: str) -> dict:
 
 
 # --------------------------------------------------------------------------
+# PubMed E-utilities: publication count for a drug-disease pair, as a real
+# evidence-level signal. Catches candidates with genuine literature support
+# that hasn't reached a registered trial yet — a gap ClinicalTrials.gov
+# alone can't see. No API key required at this call volume; NCBI asks for
+# one (free, via an NCBI account) if you scale this up past ~3 req/sec.
+# --------------------------------------------------------------------------
+
+def pubmed_result_count(drug_name: str, disease_name: str) -> Optional[int]:
+    try:
+        r = request_with_retry("GET", f"{PUBMED_URL}/esearch.fcgi", params={
+            "db": "pubmed",
+            "term": f'("{drug_name}"[Title/Abstract]) AND ("{disease_name}"[Title/Abstract])',
+            "retmode": "json",
+            "retmax": 0,  # we only want the count, not the actual PMIDs
+        })
+    except requests.RequestException:
+        return None
+    try:
+        return int(r.json()["esearchresult"]["count"])
+    except (KeyError, ValueError):
+        return None
+
+
+# --------------------------------------------------------------------------
+# WHO GHO OData API: disease burden, resolved by searching indicator NAMES
+# rather than hardcoding indicator codes — codes can be renamed/retired,
+# and a hardcoded table would silently go stale with no error to notice.
+# Free, no auth: https://ghoapi.azureedge.net/api/
+# --------------------------------------------------------------------------
+
+def gho_burden_for_disease(disease_name: str) -> Optional[dict]:
+    """Best-effort: finds a GHO indicator whose name mentions this disease
+    and reports a case/burden count, then returns its most recent value.
+    NTDs are unevenly covered in GHO (case-count indicators exist for most
+    of the preventive-chemotherapy diseases, not all 21) — a None/empty
+    result here is a real coverage gap, not necessarily a bug."""
+    try:
+        r = request_with_retry("GET", f"{GHO_URL}/Indicator", params={
+            "$filter": f"contains(IndicatorName,'{disease_name}')",
+        })
+    except requests.RequestException as e:
+        return {"lookup_error": str(e)}
+    indicators = r.json().get("value", [])
+    # Prefer an indicator that looks like a case-count/burden metric over
+    # e.g. "status of endemicity" (categorical, not a number worth trending).
+    burden_kw = ("case", "number", "requiring", "reported")
+    candidates = [i for i in indicators
+                  if any(k in i.get("IndicatorName", "").lower() for k in burden_kw)]
+    target = (candidates or indicators)
+    if not target:
+        return None
+    code = target[0]["IndicatorCode"]
+    try:
+        r2 = request_with_retry("GET", f"{GHO_URL}/{code}", params={"$top": 1000})
+    except requests.RequestException as e:
+        return {"lookup_error": str(e)}
+    rows = r2.json().get("value", [])
+    if not rows:
+        return None
+    latest = max(rows, key=lambda row: row.get("TimeDim", 0))
+    return {
+        "indicator_name": target[0]["IndicatorName"],
+        "year": latest.get("TimeDim"),
+        "value": latest.get("NumericValue") or latest.get("Value"),
+    }
+
+
+# --------------------------------------------------------------------------
+# Expert-curated overlay: patent status, WHO EML membership, resistance
+# notes, manufacturing notes. None of these have a clean free API — see the
+# module docstring for why. This is a human filling in a spreadsheet, not
+# automation pretending otherwise. Merged onto candidates by drug name.
+# --------------------------------------------------------------------------
+
+def load_expert_annotations(path: str) -> dict:
+    """Expected CSV columns: drug, patent_status, eml_listed, resistance_notes,
+    manufacturing_notes. Any column can be blank if not yet researched —
+    that's an honest 'not yet reviewed' state, not an error."""
+    out = {}
+    with open(path, newline="") as f:
+        for row in csv.DictReader(f):
+            drug = (row.get("drug") or "").strip()
+            if not drug:
+                continue
+            out[drug] = {
+                "patent_status": row.get("patent_status") or None,
+                "eml_listed": is_true(row.get("eml_listed")) if row.get("eml_listed") else None,
+                "resistance_notes": row.get("resistance_notes") or None,
+                "manufacturing_notes": row.get("manufacturing_notes") or None,
+            }
+    return out
+
+
+def is_true(v) -> bool:
+    return str(v).strip().lower() in ("true", "1", "yes")
+
+
+# --------------------------------------------------------------------------
 # Scoring — same weighted-factor model as the demo front-end, but fed by
 # live association scores + regulatory phase instead of hand-typed numbers.
 # Swap in DisGeNET / patent-status / ATC-based affordability lookups here
@@ -490,7 +643,8 @@ def priority_score(assoc: float, max_phase: float,
 
 def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
                  include_ntd_screens: bool = False, tdr_csv: Optional[str] = None,
-                 include_clinical_evidence: bool = False):
+                 include_clinical_evidence: bool = False, include_literature: bool = False,
+                 include_burden: bool = False, expert_csv: Optional[str] = None):
     nodes: dict[str, dict] = {}
     links: list[dict] = []
     candidates: list[ScoredCandidate] = []
@@ -511,8 +665,24 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
             if row["target_symbol"]:
                 tdr_by_target[row["target_symbol"]] = row
 
+    # Optional: expert-curated overlay (patent/EML/resistance/manufacturing).
+    # Keyed by drug name — see load_expert_annotations() for why this is a
+    # human-filled CSV rather than a fake API integration.
+    expert_by_drug = {}
+    if expert_csv:
+        print(f"[expert] loading manual annotations: {expert_csv}", file=sys.stderr)
+        expert_by_drug = load_expert_annotations(expert_csv)
+
+    burden_by_disease = {}
+
     for name in disease_names:
         print(f"[disease] resolving: {name}", file=sys.stderr)
+        if include_burden:
+            burden = gho_burden_for_disease(name)
+            if burden and "lookup_error" not in burden:
+                burden_by_disease[name] = burden
+                print(f"  [burden] {burden.get('indicator_name')}: "
+                      f"{burden.get('value')} ({burden.get('year')})", file=sys.stderr)
         resolved = ot_search_disease(name)
         if not resolved:
             print(f"  no Open Targets match for {name}, skipping", file=sys.stderr)
@@ -598,6 +768,23 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
                     add_node(d.drug_name, type="drug", boxed_warning=candidate.boxed_warning,
                              disease_trial_count=candidate.disease_trial_count)
 
+                if include_literature:
+                    candidate.pubmed_result_count = pubmed_result_count(d.drug_name, name)
+
+                if include_burden and name in burden_by_disease:
+                    b = burden_by_disease[name]
+                    candidate.disease_burden_estimate = f"{b.get('value')} ({b.get('year')}, {b.get('indicator_name')})"
+
+                if include_clinical_evidence:
+                    candidate.storage_requires_cold_chain = label.get("requires_cold_chain")
+
+                if d.drug_name in expert_by_drug:
+                    exp = expert_by_drug[d.drug_name]
+                    candidate.patent_status = exp["patent_status"]
+                    candidate.eml_listed = exp["eml_listed"]
+                    candidate.resistance_notes = exp["resistance_notes"]
+                    candidate.manufacturing_notes = exp["manufacturing_notes"]
+
                 candidates.append(candidate)
 
         # ChEMBL-NTD-style phenotypic hits: compounds active against the
@@ -644,10 +831,21 @@ def main():
     ap.add_argument("--include-ntd-screens", action="store_true",
                      help="also pull ChEMBL-NTD-style phenotypic screening hits per pathogen organism")
     ap.add_argument("--include-clinical-evidence", action="store_true",
-                     help="also pull openFDA label flags (boxed warnings, contraindications), "
-                          "FAERS serious-adverse-event counts, and ClinicalTrials.gov trial "
-                          "history for this specific drug-disease pair. Roughly triples API "
-                          "calls per drug — off by default.")
+                     help="also pull openFDA label flags (boxed warnings, contraindications, "
+                          "cold-chain storage), FAERS serious-adverse-event counts, and "
+                          "ClinicalTrials.gov trial history for this specific drug-disease "
+                          "pair. Roughly triples API calls per drug — off by default.")
+    ap.add_argument("--include-literature", action="store_true",
+                     help="also pull a PubMed publication count per drug-disease pair "
+                          "(one extra API call per drug)")
+    ap.add_argument("--include-burden", action="store_true",
+                     help="also pull WHO GHO disease burden (case counts) per disease "
+                          "(one extra API call per disease, not per drug)")
+    ap.add_argument("--expert-annotations-csv", default=None,
+                     help="path to a human-curated CSV with columns: drug, patent_status, "
+                          "eml_listed, resistance_notes, manufacturing_notes. These fields "
+                          "have no clean free API — see the module docstring for why — so "
+                          "this is where a person's research gets merged in instead.")
     ap.add_argument("--tdr-csv", default=None,
                      help="path to a manually-exported TDR Targets CSV (see load_tdr_targets_csv)")
     ap.add_argument("--list-ntd-deposits", action="store_true",
@@ -671,6 +869,9 @@ def main():
         disease_list, top_targets_per_disease=args.top_targets,
         include_ntd_screens=args.include_ntd_screens, tdr_csv=args.tdr_csv,
         include_clinical_evidence=args.include_clinical_evidence,
+        include_literature=args.include_literature,
+        include_burden=args.include_burden,
+        expert_csv=args.expert_annotations_csv,
     )
 
     with open(args.out, "w") as f:
@@ -680,7 +881,10 @@ def main():
     fallback_fields = ["drug", "disease", "target", "association_score", "max_phase",
                         "action_type", "priority_score", "boxed_warning", "contraindications",
                         "serious_ae_reports", "disease_trial_count",
-                        "disease_max_trial_phase", "disease_trial_has_results"]
+                        "disease_max_trial_phase", "disease_trial_has_results",
+                        "pubmed_result_count", "disease_burden_estimate",
+                        "storage_requires_cold_chain", "patent_status", "eml_listed",
+                        "resistance_notes", "manufacturing_notes"]
     with open(args.csv, "w", newline="") as f:
         w = csv.DictWriter(f, fieldnames=list(asdict(candidates[0]).keys()) if candidates
                             else fallback_fields)
@@ -701,17 +905,21 @@ if __name__ == "__main__":
 # --------------------------------------------------------------------------
 # NEXT STAGES (not implemented here — roadmap notes)
 # --------------------------------------------------------------------------
-# 1. Affordability/access factor: pull ATC classification + generic
-#    manufacturer count (e.g. via WHO ATC/DDD index, or a patent-status
-#    lookup) to replace the placeholder in priority_score().
+# 1. Affordability/access factor: --expert-annotations-csv now carries
+#    patent_status and eml_listed, but neither feeds priority_score yet —
+#    same deliberate choice as boxed_warning: these are judgment calls for
+#    a human reviewer, not something to silently average into one number.
 # 2. Cross-disease target overlap: after running this for both the NTD list
 #    and a cancer/rare-disease target list, join on target_id to surface
 #    drugs whose target is shared across BioSynth's three focus areas —
 #    that overlap is the single highest-signal repurposing flag.
 # 3. DONE (--include-clinical-evidence): openFDA labels + FAERS + trial
-#    history for the specific drug-disease pair. Still open: a genuine
-#    literature-evidence factor (PubMed E-utilities count/recency per
-#    drug-disease pair) as a richer signal than trial existence alone.
+#    history for the specific drug-disease pair, including cold-chain
+#    storage flags. DONE (--include-literature): PubMed publication counts.
+#    DONE (--include-burden): WHO GHO disease burden. DONE
+#    (--expert-annotations-csv): patent status, EML listing, resistance and
+#    manufacturing notes as a human-curated overlay — see the module
+#    docstring for why these couldn't be live API integrations.
 # 4. Load into Neo4j: MERGE nodes/relationships from the JSON output using
 #    the neo4j Python driver, or generate a LOAD CSV / apoc.load.json script,
 #    to get real Cypher traversal ("targets shared by >=2 NTDs") instead of
@@ -722,6 +930,11 @@ if __name__ == "__main__":
 #    CHEMBL_NTD_DEPOSITED_SETS / --list-ntd-deposits) still require manual
 #    SDF/CSV download and a small loader — same pattern as
 #    load_tdr_targets_csv() — since neither has a live query API.
+# 7. Genuinely still out of scope, not just deferred: ADMET beyond the
+#    label, and any form of automated resistance/manufacturing-cost
+#    inference. These need a domain expert's actual judgment, not a script
+#    guessing at it — see --expert-annotations-csv for the honest version
+#    of "integrating" this: a person fills it in.
 # 7. TDR Targets: if their team confirms/publishes a stable bulk-download
 #    format (check https://tdrtargets.org/releases), replace the manual
 #    --tdr-csv step with a direct fetch.
