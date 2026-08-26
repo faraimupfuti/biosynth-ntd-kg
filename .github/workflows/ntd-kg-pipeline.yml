@@ -31,6 +31,18 @@ on:
         description: 'Also pull openFDA labels/FAERS + ClinicalTrials.gov trial history (slower — roughly triples API calls per drug)'
         type: boolean
         default: false
+      include_literature:
+        description: 'Also pull PubMed publication counts per drug-disease pair (slower)'
+        type: boolean
+        default: false
+      include_burden:
+        description: 'Also pull WHO GHO disease burden (case counts) per disease'
+        type: boolean
+        default: false
+      expert_annotations_path:
+        description: 'Path in this repo to a human-curated expert-annotations CSV (patent status, EML, resistance, manufacturing notes). Leave blank to skip — see scripts/report_generator.py docstring for the expected columns.'
+        required: false
+        default: ''
   schedule:
     - cron: '0 6 * * 1'   # every Monday 06:00 UTC — adjust to taste
 
@@ -57,13 +69,16 @@ jobs:
       - name: Run pipeline
         id: run
         env:
-          # Passed as an env var (not interpolated straight into the run
+          # Passed as env vars (not interpolated straight into the run
           # script) specifically so a multi-word value like "Chagas disease"
           # can't get word-split by the shell before Python sees it — that
           # exact bug produced a broken graph on the first live run.
           DISEASES_INPUT: ${{ github.event.inputs.diseases }}
           INCLUDE_SCREENS: ${{ github.event.inputs.include_ntd_screens }}
           INCLUDE_CLINICAL: ${{ github.event.inputs.include_clinical_evidence }}
+          INCLUDE_LITERATURE: ${{ github.event.inputs.include_literature }}
+          INCLUDE_BURDEN: ${{ github.event.inputs.include_burden }}
+          EXPERT_PATH: ${{ github.event.inputs.expert_annotations_path }}
         run: |
           mkdir -p data
           ARGS=""
@@ -75,6 +90,19 @@ jobs:
           fi
           if [ "$INCLUDE_CLINICAL" = "true" ]; then
             ARGS="$ARGS --include-clinical-evidence"
+          fi
+          if [ "$INCLUDE_LITERATURE" = "true" ]; then
+            ARGS="$ARGS --include-literature"
+          fi
+          if [ "$INCLUDE_BURDEN" = "true" ]; then
+            ARGS="$ARGS --include-burden"
+          fi
+          if [ -n "$EXPERT_PATH" ]; then
+            if [ -f "$EXPERT_PATH" ]; then
+              ARGS="$ARGS --expert-annotations-csv \"$EXPERT_PATH\""
+            else
+              echo "::warning::expert_annotations_path '$EXPERT_PATH' not found in repo — skipping, running without it"
+            fi
           fi
           eval python scripts/ntd_kg_pipeline.py \
             --out data/ntd_graph.json \
