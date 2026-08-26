@@ -81,6 +81,9 @@ jobs:
             --csv data/ntd_candidates.csv \
             $ARGS
 
+      - name: Generate research brief
+        run: python scripts/report_generator.py --csv data/ntd_candidates.csv --out data/ntd_report.md
+
       - name: Upload as workflow artifact (backup / review before merge)
         uses: actions/upload-artifact@v4
         with:
@@ -88,10 +91,11 @@ jobs:
           path: |
             data/ntd_graph.json
             data/ntd_candidates.csv
+            data/ntd_report.md
           retention-days: 90
 
       - name: Commit updated graph data
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: refresh NTD knowledge graph data [automated]"
-          file_pattern: "data/ntd_graph.json data/ntd_candidates.csv"
+          file_pattern: "data/ntd_graph.json data/ntd_candidates.csv data/ntd_report.md"
