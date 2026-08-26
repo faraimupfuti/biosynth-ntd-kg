@@ -60,6 +60,7 @@ pocket detection, etc.) — that is a separate, heavier pipeline stage. See the
 import argparse
 import csv
 import json
+import random
 import sys
 import time
 from dataclasses import dataclass, field, asdict
@@ -82,7 +83,40 @@ NTD_NAMES = [
     "Soil-transmitted helminthiasis", "Taeniasis", "Trachoma", "Yaws",
 ]
 
-HEADERS = {"User-Agent": "BioSynth-NTD-KG/0.2 (research pipeline)"}
+HEADERS = {"User-Agent": "BioSynth-NTD-KG/0.3 (research pipeline)"}
+
+
+def request_with_retry(method: str, url: str, *, max_retries: int = 4,
+                        base_delay: float = 2.0, **kwargs) -> requests.Response:
+    """Shared retry/backoff wrapper for every outbound call in this script.
+
+    The public EBI (ChEMBL) and Open Targets endpoints are free services —
+    they occasionally return 500/502/503/504 under load, or 429 if you're
+    hitting them fast. Without this, a single transient error kills the
+    entire run (that's exactly what happened on CHEMBL227 in the first live
+    test — the target has a very large mechanism list and the free server
+    timed out on it once). Retries with exponential backoff + jitter turn a
+    one-off blip into a few extra seconds instead of a failed run.
+    """
+    last_exc = None
+    for attempt in range(1, max_retries + 1):
+        try:
+            resp = requests.request(method, url, headers=HEADERS, timeout=30, **kwargs)
+            if resp.status_code in (429, 500, 502, 503, 504):
+                raise requests.exceptions.HTTPError(
+                    f"{resp.status_code} on attempt {attempt}", response=resp)
+            resp.raise_for_status()
+            return resp
+        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
+                requests.exceptions.Timeout) as e:
+            last_exc = e
+            if attempt == max_retries:
+                break
+            delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 1)
+            print(f"    [retry] {url.split('?')[0]} failed ({e}); "
+                  f"retrying in {delay:.1f}s ({attempt}/{max_retries})", file=sys.stderr)
+            time.sleep(delay)
+    raise last_exc
 
 # NTD -> causative organism, needed because ChEMBL-style phenotypic screening
 # data (and TDR Targets) are indexed by pathogen, not by WHO disease name.
@@ -164,9 +198,7 @@ class ScoredCandidate:
 # --------------------------------------------------------------------------
 
 def ot_query(query: str, variables: dict) -> dict:
-    resp = requests.post(OT_URL, json={"query": query, "variables": variables},
-                          headers=HEADERS, timeout=30)
-    resp.raise_for_status()
+    resp = request_with_retry("POST", OT_URL, json={"query": query, "variables": variables})
     payload = resp.json()
     if "errors" in payload:
         raise RuntimeError(f"Open Targets GraphQL error: {payload['errors']}")
@@ -218,27 +250,22 @@ def ot_targets_for_disease(disease_id: str, disease_name: str, top_n: int = 8) -
 # --------------------------------------------------------------------------
 
 def chembl_target_id_for_symbol(symbol: str) -> Optional[str]:
-    r = requests.get(f"{CHEMBL_URL}/target.json",
-                      params={"target_synonym__icontains": symbol, "limit": 1},
-                      headers=HEADERS, timeout=30)
-    r.raise_for_status()
+    r = request_with_retry("GET", f"{CHEMBL_URL}/target.json",
+                            params={"target_synonym__icontains": symbol, "limit": 1})
     targets = r.json().get("targets", [])
     return targets[0]["target_chembl_id"] if targets else None
 
 
 def chembl_drugs_for_target(target_chembl_id: str, target_symbol: str) -> list[DrugHit]:
-    r = requests.get(f"{CHEMBL_URL}/mechanism.json",
-                      params={"target_chembl_id": target_chembl_id, "limit": 25},
-                      headers=HEADERS, timeout=30)
-    r.raise_for_status()
+    r = request_with_retry("GET", f"{CHEMBL_URL}/mechanism.json",
+                            params={"target_chembl_id": target_chembl_id, "limit": 25})
     mechanisms = r.json().get("mechanisms", [])
     out = []
     for m in mechanisms:
         mol_id = m.get("molecule_chembl_id")
         if not mol_id:
             continue
-        mol = requests.get(f"{CHEMBL_URL}/molecule/{mol_id}.json",
-                            headers=HEADERS, timeout=30).json()
+        mol = request_with_retry("GET", f"{CHEMBL_URL}/molecule/{mol_id}.json").json()
         name = (mol.get("pref_name") or mol_id)
         out.append(DrugHit(
             drug_name=name,
@@ -269,14 +296,13 @@ def chembl_ntd_screening_hits(organism: str, max_ic50_nm: float = 10000,
     organism, drawn from whole-cell/whole-organism assays in ChEMBL —
     the same donor sets (GSK, Novartis, St Jude, DNDi, MMV) that make up
     ChEMBL-NTD, insofar as they've been folded into a main ChEMBL release."""
-    r = requests.get(f"{CHEMBL_URL}/activity.json", params={
+    r = request_with_retry("GET", f"{CHEMBL_URL}/activity.json", params={
         "target_organism": organism,
         "standard_type": "IC50",
         "standard_value__lte": max_ic50_nm,
         "standard_units": "nM",
         "limit": limit,
-    }, headers=HEADERS, timeout=30)
-    r.raise_for_status()
+    })
     out = []
     for a in r.json().get("activities", []):
         out.append({
@@ -365,7 +391,12 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
             continue
         add_node(name, type="disease")
 
-        targets = ot_targets_for_disease(efo_id, name, top_n=top_targets_per_disease)
+        try:
+            targets = ot_targets_for_disease(efo_id, name, top_n=top_targets_per_disease)
+        except requests.RequestException as e:
+            print(f"  [warn] Open Targets lookup failed for {name}: {e}", file=sys.stderr)
+            continue
+
         for t in targets:
             tdr_hit = tdr_by_target.get(t.target_symbol)
             add_node(t.target_symbol, type="target",
@@ -374,10 +405,23 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
             links.append({"source": name, "target": t.target_symbol,
                           "kind": "associated", "score": t.association_score})
 
-            chembl_id = chembl_target_id_for_symbol(t.target_symbol)
+            try:
+                chembl_id = chembl_target_id_for_symbol(t.target_symbol)
+            except requests.RequestException as e:
+                print(f"  [warn] ChEMBL target lookup failed for "
+                      f"{t.target_symbol}: {e}", file=sys.stderr)
+                continue
             if not chembl_id:
                 continue
-            drugs = chembl_drugs_for_target(chembl_id, t.target_symbol)
+            try:
+                drugs = chembl_drugs_for_target(chembl_id, t.target_symbol)
+            except requests.RequestException as e:
+                # A single problematic target (e.g. one with an unusually
+                # large mechanism list) should not take down the whole run —
+                # log it and keep going with everything else.
+                print(f"  [warn] ChEMBL lookup failed for target "
+                      f"{t.target_symbol} ({chembl_id}): {e}", file=sys.stderr)
+                continue
             for d in drugs:
                 add_node(d.drug_name, type="drug",
                          max_phase=d.max_phase, action=d.action_type)
