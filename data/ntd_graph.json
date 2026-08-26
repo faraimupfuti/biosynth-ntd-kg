@@ -1,547 +1,107 @@
 {
   "nodes": [
     {
-      "id": "Chagas disease",
+      "id": "dengue",
       "type": "disease",
-      "matched_name": "Chagas disease"
+      "matched_name": "dengue disease"
     },
     {
-      "id": "TGFB1",
+      "id": "APOA1",
       "type": "target",
       "tdr_druggability": null,
       "tdr_essential": null
     },
     {
-      "id": "FRESOLIMUMAB",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "METELIMUMAB",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "LY-2382770",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "TUBA1B",
+      "id": "HAVCR1",
       "type": "target",
       "tdr_druggability": null,
       "tdr_essential": null
     },
     {
-      "id": "TRASTUZUMAB EMTANSINE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
+      "id": "YBX1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
     },
     {
-      "id": "BRENTUXIMAB VEDOTIN",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
+      "id": "CD209",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
     },
     {
-      "id": "PACLITAXEL",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
+      "id": "PROS1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
     },
     {
-      "id": "DOCETAXEL",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "ERIBULIN MESYLATE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "CABAZITAXEL",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "COLCHICINE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "IXABEPILONE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "VINCRISTINE SULFATE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "VINORELBINE TARTRATE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "VINBLASTINE SULFATE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "PACLITAXEL POLIGLUMEX",
+      "id": "PROTHROMBIN COMPLEX CONCENTRATE",
       "type": "drug",
       "max_phase": "3.0",
-      "action": "STABILISER"
+      "action": "EXOGENOUS PROTEIN",
+      "disease_trial_count": 0
     },
     {
-      "id": "INDIBULIN",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "DAVUNETIDE",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "STABILISER"
-    },
-    {
-      "id": "CROLIBULIN",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "LEXIBULIN",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "VINFLUNINE",
+      "id": "PROTEIN S HUMAN",
       "type": "drug",
       "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "FOSBRETABULIN DISODIUM",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "FOSBRETABULIN TROMETHAMINE",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "DISRUPTING AGENT"
-    },
-    {
-      "id": "SAGOPILONE",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "STABILISER"
-    },
-    {
-      "id": "PLINABULIN",
-      "type": "drug",
-      "max_phase": "3.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "VERUBULIN",
-      "type": "drug",
-      "max_phase": "2.0",
-      "action": "DISRUPTING AGENT"
-    },
-    {
-      "id": "MIRVETUXIMAB SORAVTANSINE",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "POLATUZUMAB VEDOTIN",
-      "type": "drug",
-      "max_phase": "4.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "RG-7841",
-      "type": "drug",
-      "max_phase": "1.0",
-      "action": "INHIBITOR"
-    },
-    {
-      "id": "TUBB",
-      "type": "target",
-      "tdr_druggability": null,
-      "tdr_essential": null
-    },
-    {
-      "id": "TUBB1",
-      "type": "target",
-      "tdr_druggability": null,
-      "tdr_essential": null
-    },
-    {
-      "id": "TUBB4A",
-      "type": "target",
-      "tdr_druggability": null,
-      "tdr_essential": null
+      "action": "EXOGENOUS PROTEIN",
+      "disease_trial_count": 2
     }
   ],
   "links": [
     {
-      "source": "Chagas disease",
-      "target": "TGFB1",
+      "source": "dengue",
+      "target": "APOA1",
       "kind": "associated",
-      "score": 0.0885058615966489
+      "score": 0.58066719453917
     },
     {
-      "source": "FRESOLIMUMAB",
-      "target": "TGFB1",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "FRESOLIMUMAB",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "METELIMUMAB",
-      "target": "TGFB1",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "METELIMUMAB",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "LY-2382770",
-      "target": "TGFB1",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "LY-2382770",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "Chagas disease",
-      "target": "TUBA1B",
+      "source": "dengue",
+      "target": "HAVCR1",
       "kind": "associated",
-      "score": 0.07520950042833682
+      "score": 0.5442191686570667
     },
     {
-      "source": "TRASTUZUMAB EMTANSINE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "TRASTUZUMAB EMTANSINE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "BRENTUXIMAB VEDOTIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "BRENTUXIMAB VEDOTIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "PACLITAXEL",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "PACLITAXEL",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "DOCETAXEL",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "DOCETAXEL",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "ERIBULIN MESYLATE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "ERIBULIN MESYLATE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "CABAZITAXEL",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "CABAZITAXEL",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "COLCHICINE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "COLCHICINE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "IXABEPILONE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "IXABEPILONE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "VINCRISTINE SULFATE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "VINCRISTINE SULFATE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "VINORELBINE TARTRATE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "VINORELBINE TARTRATE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "VINBLASTINE SULFATE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "VINBLASTINE SULFATE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "PACLITAXEL POLIGLUMEX",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "STABILISER"
-    },
-    {
-      "source": "PACLITAXEL POLIGLUMEX",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "INDIBULIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "INDIBULIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "DAVUNETIDE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "STABILISER"
-    },
-    {
-      "source": "DAVUNETIDE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "CROLIBULIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "CROLIBULIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "LEXIBULIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "LEXIBULIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "VINFLUNINE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "VINFLUNINE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "FOSBRETABULIN DISODIUM",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "FOSBRETABULIN DISODIUM",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "FOSBRETABULIN TROMETHAMINE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "DISRUPTING AGENT"
-    },
-    {
-      "source": "FOSBRETABULIN TROMETHAMINE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "SAGOPILONE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "STABILISER"
-    },
-    {
-      "source": "SAGOPILONE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "PLINABULIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "PLINABULIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "VERUBULIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "DISRUPTING AGENT"
-    },
-    {
-      "source": "VERUBULIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "MIRVETUXIMAB SORAVTANSINE",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "MIRVETUXIMAB SORAVTANSINE",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "POLATUZUMAB VEDOTIN",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "POLATUZUMAB VEDOTIN",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "RG-7841",
-      "target": "TUBA1B",
-      "kind": "modulates",
-      "action_type": "INHIBITOR"
-    },
-    {
-      "source": "RG-7841",
-      "target": "Chagas disease",
-      "kind": "candidate"
-    },
-    {
-      "source": "Chagas disease",
-      "target": "TUBB",
+      "source": "dengue",
+      "target": "YBX1",
       "kind": "associated",
-      "score": 0.07391597093694036
+      "score": 0.5409211817593593
     },
     {
-      "source": "Chagas disease",
-      "target": "TUBB1",
+      "source": "dengue",
+      "target": "CD209",
       "kind": "associated",
-      "score": 0.07391597093694036
+      "score": 0.5255245193445559
     },
     {
-      "source": "Chagas disease",
-      "target": "TUBB4A",
+      "source": "dengue",
+      "target": "PROS1",
       "kind": "associated",
-      "score": 0.07391597093694036
+      "score": 0.5132923560491462
+    },
+    {
+      "source": "PROTHROMBIN COMPLEX CONCENTRATE",
+      "target": "PROS1",
+      "kind": "modulates",
+      "action_type": "EXOGENOUS PROTEIN"
+    },
+    {
+      "source": "PROTHROMBIN COMPLEX CONCENTRATE",
+      "target": "dengue",
+      "kind": "candidate"
+    },
+    {
+      "source": "PROTEIN S HUMAN",
+      "target": "PROS1",
+      "kind": "modulates",
+      "action_type": "EXOGENOUS PROTEIN"
+    },
+    {
+      "source": "PROTEIN S HUMAN",
+      "target": "dengue",
+      "kind": "candidate"
     }
   ]
 }
