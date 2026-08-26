@@ -441,7 +441,7 @@ def build_graph(disease_names: list[str], top_targets_per_disease: int = 5,
                               "kind": "modulates", "action_type": d.action_type})
                 links.append({"source": d.drug_name, "target": name, "kind": "candidate"})
 
-                mp = d.max_phase or 0
+                mp = _safe_float(d.max_phase) or 0.0
                 candidates.append(ScoredCandidate(
                     drug=d.drug_name, disease=name, target=t.target_symbol,
                     association_score=t.association_score, max_phase=mp,
