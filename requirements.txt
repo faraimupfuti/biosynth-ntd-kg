@@ -3,6 +3,7 @@ pandas
 scikit-learn
 networkx
 matplotlib
+requests          # needed by src/enrich_from_sources.py, src/deploy_neo4j.py, and scripts/ntd_kg_pipeline.py
 
 # Optional, for scaling beyond this proof-of-concept once you have
 # network access to install them (see src/gnn_numpy.py docstring):

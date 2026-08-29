@@ -92,6 +92,13 @@ EDGE_TYPES = {
     ("Pathogen", "hasGene", "PathogenGene"): "PhPG",
     ("PathogenGene", "orthologOf", "Gene"): "PGoG",
     ("PathogenGene", "participates", "Pathway"): "PGpPW",
+    # NEW: hypothesis-stage edges from ntd_kg_pipeline.py's live API pull.
+    # Deliberately DISTINCT from CtD (ground-truth approved indication) --
+    # these are drugs whose known target is merely associated with a
+    # disease, or a phenotypic screening hit. Mixing them into CtD would
+    # corrupt the ML models' positive-label ground truth.
+    ("Compound", "candidateFor", "Disease"): "CfD",
+    ("Compound", "phenotypicHitAgainst", "Disease"): "CpH",
 }
 
 # Which edge type is the prediction TARGET for repurposing

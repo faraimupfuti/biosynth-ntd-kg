@@ -1,51 +1,51 @@
 rank,compound,disease,baseline_score,gnn_score,ensemble_score
-1,Mebendazole,Lymphatic filariasis,0.5406,1.0,0.9744
-2,Melarsoprol,Leishmaniasis,0.5368,1.0,0.9701
-3,Nifurtimox,Leishmaniasis,0.5368,1.0,0.9124
-4,Benznidazole,Leishmaniasis,0.5368,1.0,0.8825
-5,Mebendazole,Taeniasis/Cysticercosis,0.5783,0.9998,0.8825
-6,Auranofin,Onchocerciasis,0.4394,1.0,0.8697
-7,Auranofin,Echinococcosis,0.4394,1.0,0.8547
-8,Mebendazole,Echinococcosis,0.4394,1.0,0.8056
-9,Doxycycline,Trachoma,0.68,0.9978,0.8013
-10,Auranofin,Leishmaniasis,0.5611,0.9985,0.8013
-11,Mebendazole,Onchocerciasis,0.4394,1.0,0.7927
-12,Auranofin,Lymphatic filariasis,0.4394,0.9997,0.7885
-13,Doxycycline,Scabies,0.4394,1.0,0.7863
-14,Azithromycin,Onchocerciasis,0.4394,1.0,0.7842
-15,Melarsoprol,Chagas disease,0.56,0.9972,0.7821
-16,Mebendazole,Human African trypanosomiasis,0.4394,1.0,0.7821
-17,Auranofin,Schistosomiasis,0.4394,0.9996,0.7821
-18,Auranofin,Trachoma,0.4394,0.9996,0.7821
-19,Auranofin,Scabies,0.4394,0.9992,0.7821
-20,Azithromycin,Echinococcosis,0.4394,1.0,0.7756
-21,Mebendazole,Scabies,0.4394,1.0,0.7735
-22,Doxycycline,Echinococcosis,0.4394,1.0,0.7714
-23,Rifampicin,Scabies,0.4394,1.0,0.7692
-24,Auranofin,Human African trypanosomiasis,0.449,0.9975,0.7692
-25,Mebendazole,Leishmaniasis,0.4394,1.0,0.765
-26,Auranofin,Chagas disease,0.4476,0.9962,0.7521
-27,Clofazimine,Leishmaniasis,0.4394,0.9994,0.75
-28,Albendazole,Onchocerciasis,0.4394,1.0,0.7479
-29,Albendazole,Taeniasis/Cysticercosis,0.5783,0.9947,0.7479
-30,Fexinidazole,Chagas disease,0.5696,0.9932,0.7329
-31,Albendazole,Human African trypanosomiasis,0.4394,1.0,0.7329
-32,Azithromycin,Human African trypanosomiasis,0.4394,0.9999,0.7308
-33,Mebendazole,Chagas disease,0.4394,1.0,0.7265
-34,Albendazole,Leishmaniasis,0.4394,1.0,0.7244
-35,Azithromycin,Lymphatic filariasis,0.4394,0.9998,0.7201
-36,Albendazole,Scabies,0.4394,1.0,0.7179
-37,Azithromycin,Leishmaniasis,0.4394,0.9999,0.7179
-38,Fluoxetine,Lymphatic filariasis,0.4394,0.9943,0.7158
-39,Doxycycline,Schistosomiasis,0.4394,0.9999,0.7158
-40,Mebendazole,Schistosomiasis,0.4394,1.0,0.7115
-41,Rifampicin,Onchocerciasis,0.4394,0.9993,0.7115
-42,Doxycycline,Human African trypanosomiasis,0.4394,0.9999,0.7094
-43,Mebendazole,Leprosy,0.4394,1.0,0.703
-44,Auranofin,Taeniasis/Cysticercosis,0.4394,0.9916,0.6944
-45,Fluoxetine,Onchocerciasis,0.4394,0.9929,0.6923
-46,Albendazole,Chagas disease,0.4394,1.0,0.6902
-47,Albendazole,Leprosy,0.4394,1.0,0.6838
-48,Doxycycline,Leishmaniasis,0.4394,0.9996,0.6838
-49,Niclosamide,Echinococcosis,0.4394,0.9953,0.6816
-50,Dapsone,Trachoma,0.4394,0.9977,0.6774
+1,Fexinidazole,Chagas disease,0.547,1.0,0.985
+2,Benznidazole,Human African trypanosomiasis,0.5795,1.0,0.9551
+3,Melarsoprol,Chagas disease,0.5392,1.0,0.9551
+4,Auranofin,Chagas disease,0.4488,1.0,0.9487
+5,Doxycycline,Trachoma,0.6793,0.9999,0.9402
+6,Auranofin,Human African trypanosomiasis,0.4517,1.0,0.9316
+7,Mebendazole,Taeniasis/Cysticercosis,0.5792,0.9993,0.8868
+8,Pentamidine,Chagas disease,0.4483,0.9997,0.8803
+9,Benznidazole,Leishmaniasis,0.5383,0.9992,0.8568
+10,Rifampicin,Trachoma,0.4421,1.0,0.8526
+11,Rifampicin,Chagas disease,0.4421,1.0,0.8462
+12,Rifampicin,Human African trypanosomiasis,0.4421,1.0,0.8269
+13,Nifurtimox,Leishmaniasis,0.5383,0.997,0.8162
+14,Auranofin,Trachoma,0.4421,0.9994,0.8141
+15,Mebendazole,Lymphatic filariasis,0.542,0.9952,0.8013
+16,Dapsone,Chagas disease,0.4421,1.0,0.7991
+17,Niclosamide,Schistosomiasis,0.4421,0.9984,0.7906
+18,Niclosamide,Trachoma,0.4421,0.9977,0.7906
+19,Rifampicin,Leishmaniasis,0.4421,0.9998,0.7821
+20,Dapsone,Trachoma,0.4421,0.9995,0.7821
+21,Niclosamide,Echinococcosis,0.4421,0.9987,0.7778
+22,Mebendazole,Echinococcosis,0.4421,1.0,0.7671
+23,Doxycycline,Soil-transmitted helminthiasis,0.4421,0.9999,0.7628
+24,Rifampicin,Taeniasis/Cysticercosis,0.4421,0.9993,0.7564
+25,Mebendazole,Trachoma,0.4421,1.0,0.7543
+26,Rifampicin,Soil-transmitted helminthiasis,0.4421,0.9993,0.7543
+27,Auranofin,Leishmaniasis,0.5623,0.9852,0.75
+28,Fluoxetine,Human African trypanosomiasis,0.5204,0.9895,0.75
+29,Doxycycline,Echinococcosis,0.4421,0.9999,0.7479
+30,Rifampicin,Echinococcosis,0.4421,0.9996,0.7479
+31,Dapsone,Echinococcosis,0.4421,0.9986,0.7415
+32,Doxycycline,Schistosomiasis,0.4421,0.9998,0.7372
+33,Mebendazole,Leprosy,0.4421,0.9999,0.735
+34,Mebendazole,Scabies,0.4421,0.9998,0.7308
+35,Ivermectin,Trachoma,0.4421,1.0,0.7286
+36,Clofazimine,Soil-transmitted helminthiasis,0.4421,0.9958,0.7244
+37,Doxycycline,Taeniasis/Cysticercosis,0.4421,0.9997,0.7179
+38,Melarsoprol,Leishmaniasis,0.5383,0.9792,0.7137
+39,Doxycycline,Scabies,0.4421,0.999,0.7094
+40,Auranofin,Echinococcosis,0.4421,0.9852,0.7073
+41,Ivermectin,Schistosomiasis,0.4421,1.0,0.6987
+42,Rifampicin,Schistosomiasis,0.4421,0.9969,0.6987
+43,Dapsone,Taeniasis/Cysticercosis,0.4421,0.9957,0.6987
+44,Fluoxetine,Onchocerciasis,0.4421,0.9805,0.6923
+45,Ivermectin,Echinococcosis,0.4421,1.0,0.6859
+46,Clofazimine,Schistosomiasis,0.4421,0.9889,0.6816
+47,Ivermectin,Leishmaniasis,0.4421,0.9999,0.6795
+48,Ivermectin,Chagas disease,0.4421,0.9999,0.6774
+49,Albendazole,Taeniasis/Cysticercosis,0.5792,0.9575,0.6774
+50,Niclosamide,Chagas disease,0.4421,0.9836,0.6774

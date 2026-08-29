@@ -106,6 +106,48 @@ own infra, a Colab notebook, or an environment where `pip install
 torch torch-geometric` can run). The graph construction and feature
 pipeline stay identical — only the model class changes.
 
+## Two pipelines, one graph: reconciling `src/` and `scripts/`
+
+If you're merging this with a `scripts/` folder from a separate Claude
+Code session, you likely have `scripts/ntd_kg_pipeline.py` — a
+**live-API evidence pipeline** (Open Targets, ChEMBL, openFDA,
+ClinicalTrials.gov, PubMed, WHO GHO) that pulls real repurposing
+candidates with clinical-safety context, no license required on any
+source it uses. This is complementary to `src/pipeline.py`, not a
+duplicate:
+
+| | `src/pipeline.py` | `scripts/ntd_kg_pipeline.py` |
+|---|---|---|
+| Data source | Hand-curated seed graph | Live free APIs |
+| Finds | Novel structural links (metapath/GNN) | Drugs already known to hit a disease-associated target |
+| Clinical grounding | None | Boxed warnings, trial history, adverse events, burden |
+
+Integration steps:
+
+1. **Move `scripts/requirements.txt` to the repo root**, merging its
+   dependencies (`requests`, `networkx`) with this project's
+   `requirements.txt` — a repo should have one `requirements.txt` at
+   root, not one buried in a subfolder.
+2. **Run `scripts/ntd_kg_pipeline.py`** from a machine with network
+   access to get `ntd_graph.json` + `ntd_candidates.csv` — real,
+   live-pulled evidence.
+3. **Run the adapter**: `python3 src/ingest_ntd_kg_pipeline.py --graph ntd_graph.json --csv ntd_candidates.csv`
+   — merges that output into `data/nodes.csv` / `data/edges.csv`,
+   matching entities by name against the existing seed data so nothing
+   gets duplicated. New hypothesis-stage edges land as `CfD`
+   (candidateFor) / `CpH` (phenotypicHitAgainst) — **deliberately
+   separate from `CtD`** (approved treatment), so `src/pipeline.py`'s
+   models don't get trained on this pipeline's own guesses as if they
+   were ground truth. See the module docstring in
+   `src/ingest_ntd_kg_pipeline.py` for the full mapping.
+4. **Re-run `src/pipeline.py`** on the now-much-larger, real-data graph
+   — the metapath/GNN models will have actual structure to learn from
+   instead of the ~90-node seed graph.
+5. `cross_domain_overlap.py` and `report_generator.py` in `scripts/`
+   look complementary rather than overlapping (cross-disease target
+   sharing, and report formatting) — keep those as-is unless you find
+   otherwise.
+
 ## Scaling to real data
 
 **Sandbox constraint (read this first):** the code-execution sandbox
