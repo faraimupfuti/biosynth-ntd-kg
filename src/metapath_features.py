@@ -31,6 +31,23 @@ METAPATH_TEMPLATES = [
     ["CbPG", "PGoG", "GpPW", "PGpPW_rev", "PhPG_rev", "PcD"],  # via human ortholog + pathway
     ["CbG", "GpPW", "PGpPW_rev", "PhPG_rev", "PcD"],   # human-target compound -> pathway -> pathogen -> disease
     ["PCiC_rev", "CbPG", "PhPG_rev", "PcD"],    # same pharmacologic class, shared pathogen target
+    # NEW: the actual evidence type scripts/ntd_kg_pipeline.py produces --
+    # Compound binds a human Gene that Open Targets associates with the
+    # Disease. Without this, every compound/gene merged in from the live
+    # API pipeline has ZERO nonzero features (none of the templates above
+    # touch DaG/CbG-to-new-Gene-nodes), so the baseline model contributes
+    # no real signal for any of that data -- this was silently making the
+    # "novel candidates" ranking for new compounds entirely GNN-driven
+    # (and the GNN saturates near 1.0 with no real training -- see
+    # gnn_numpy.py), i.e. no real evidence behind it at all.
+    ["CbG", "DaG_rev"],                         # compound -> human target -> disease association
+    # The same route again via the CfD edge type: ntd_kg_pipeline.py
+    # already flags compound-target-disease triples as candidates with a
+    # priority_score packed into the edge's evidence field (see
+    # src/ingest_ntd_kg_pipeline.py). Counting the mere EXISTENCE of that
+    # edge as a feature (not its score) still gives the model something
+    # concrete to learn from for this data, rather than nothing.
+    ["CfD"],
 ]
 
 METAPATH_NAMES = [
@@ -40,6 +57,8 @@ METAPATH_NAMES = [
     "human_ortholog_pathway_route",
     "human_target_pathway_route",
     "same_drug_class_shared_target",
+    "human_target_disease_association",
+    "live_api_flagged_candidate",
 ]
 
 

@@ -159,25 +159,99 @@ def main():
 
     ensemble = 0.5 * rank_normalize(baseline_unknown_scores) + 0.5 * rank_normalize(gnn_unknown_scores)
 
-    top_n = 12
-    top_idx = np.argsort(-ensemble)[:top_n]
+    # ---- CROSS-INDICATION REASSIGNMENT FILTER -----------------------
+    # A compound that ALREADY has a confirmed CtD edge to some other
+    # disease is a strong red flag for this kind of graph: the metapath
+    # templates route "compound binds pathogen-target X -> X is shared
+    # across related pathogens -> pathogen Y causes disease Z" as
+    # evidence for treating Z, even when X is a broadly-conserved protein
+    # (e.g. trypanothione reductase, shared across Trypanosoma cruzi,
+    # T. brucei, and Leishmania) and the drug's real-world efficacy does
+    # NOT transfer between those species (this is exactly what produced
+    # Benznidazole->HAT, Melarsoprol->Chagas, and Pentamidine->Chagas in
+    # an earlier run -- all three compounds already have a confirmed,
+    # DIFFERENT indication). Genuinely novel candidates -- a compound
+    # with NO confirmed NTD indication yet (e.g. Auranofin, approved for
+    # rheumatoid arthritis) -- are not affected by this filter; only
+    # compounds already "spoken for" elsewhere get flagged.
+    treated_compounds = {c for c, d in pairs if G.has_edge(c, d) and
+                          any(v["abbr"] == "CtD" for v in G.get_edge_data(c, d).values())}
     node_names = {n: d["name"] for n, d in G.nodes(data=True)}
 
-    print(f"\nTop {top_n} candidate drug-NTD repurposing pairs:\n")
-    print(f"{'Rank':<5}{'Compound':<20}{'Disease':<32}{'Baseline':<10}{'GNN':<8}{'Ensemble':<10}")
-    for rank, i in enumerate(top_idx, 1):
+    import re as _re
+    chembl_id_pattern = _re.compile(r"^CHEMBL\d+$")
+
+    # Naming-convention classifier -- NOT a mechanism/efficacy judgment,
+    # just surfaces drug MODALITY so a reviewer can weigh it appropriately
+    # (e.g. a monoclonal antibody blocking a downstream immune marker is a
+    # very different kind of candidate than a small molecule hitting the
+    # pathogen directly -- see the Echinococcosis/anti-IgE discussion).
+    # Based on WHO INN (International Nonproprietary Name) stem
+    # conventions, which are standardized and stable, not a guess:
+    #   -mab            = monoclonal antibody (INN substems: -ximab
+    #                      chimeric, -zumab humanized, -umab human,
+    #                      -omab murine)
+    #   "interferon"/"interleukin"/"insulin" in name = other biologic
+    #   short alphanumeric code (e.g. "AL-901", "MEDI-4212") = pre-INN
+    #   investigational compound -- modality genuinely unknown from the
+    #   name alone, flagged as such rather than guessed
+    _mab_pattern = _re.compile(r"(mab)$", _re.IGNORECASE)
+    _code_name_pattern = _re.compile(r"^[A-Z]{2,6}-?[A-Z0-9]{2,8}$")
+
+    def drug_class(name):
+        if _mab_pattern.search(name.replace(" ", "")):
+            return "monoclonal_antibody"
+        lname = name.lower()
+        if any(kw in lname for kw in ("interferon", "interleukin", "insulin")):
+            return "biologic_other"
+        if _code_name_pattern.match(name.strip()):
+            return "code_named_unclear_modality"
+        return "likely_small_molecule"
+
+    def classify(i):
+        c, d = unknown_pairs[i]
+        flags = []
+        if c in treated_compounds:
+            flags.append("already_treats_other_disease")
+        if chembl_id_pattern.match(node_names[c]):
+            flags.append("unresolved_chembl_id")
+        return flags
+
+    order = np.argsort(-ensemble)
+    novel, flagged = [], []
+    for i in order:
+        (flagged if classify(i) else novel).append(i)
+
+    top_n = 12
+    top_novel = novel[:top_n]
+
+    print(f"\nTop {len(top_novel)} NOVEL candidate drug-NTD repurposing pairs "
+          f"(no confirmed indication for this compound elsewhere):\n")
+    print(f"{'Rank':<5}{'Compound':<20}{'Disease':<32}{'Baseline':<10}{'GNN':<8}{'Ensemble':<10}{'Modality'}")
+    for rank, i in enumerate(top_novel, 1):
         c, d = unknown_pairs[i]
         print(f"{rank:<5}{node_names[c]:<20}{node_names[d]:<32}"
-              f"{baseline_unknown_scores[i]:<10.3f}{gnn_unknown_scores[i]:<8.3f}{ensemble[i]:<10.3f}")
+              f"{baseline_unknown_scores[i]:<10.3f}{gnn_unknown_scores[i]:<8.3f}{ensemble[i]:<10.3f}"
+              f"{drug_class(node_names[c])}")
+
+    if flagged:
+        print(f"\n{len(flagged)} pair(s) EXCLUDED from the novel list above as "
+              f"cross-indication reassignment risk or unresolved IDs -- shown "
+              f"separately, NOT as recommendations (top 8 shown):\n")
+        print(f"{'Compound':<20}{'Disease':<32}{'Ensemble':<10}{'Flag'}")
+        for i in flagged[:8]:
+            c, d = unknown_pairs[i]
+            print(f"{node_names[c]:<20}{node_names[d]:<32}{ensemble[i]:<10.3f}{', '.join(classify(i))}")
 
     print("\n" + "=" * 70)
-    print("NOTE: This ranking is generated from a small, hand-curated seed")
-    print("graph (see data/build_seed_data.py) meant to validate the")
-    print("pipeline end-to-end. Treat these specific rankings as a")
-    print("methodology demo, NOT as validated candidates -- rerun once")
-    print("bulk sources (DrugBank, TDR Targets, DisGeNET) are ingested,")
-    print("and route any promising hits through literature/wet-lab")
-    print("validation before including them in a grant narrative.")
+    print("NOTE: This ranking is generated from a hand-curated seed graph")
+    print("merged with live Open Targets/ChEMBL/openFDA/etc. data (see")
+    print("scripts/ntd_kg_pipeline.py). Treat rankings as a methodology")
+    print("demo, NOT as validated candidates -- the GNN model in")
+    print("particular uses random-restart init, not real backprop, so")
+    print("its scores (often saturating near 1.0) carry limited signal")
+    print("on their own. Route any promising hits through literature/")
+    print("wet-lab validation before including them in a grant narrative.")
     print("=" * 70)
 
     # ------------------------------------------------------------- SAVE
@@ -186,25 +260,28 @@ def main():
     import csv as _csv
     with open(os.path.join(out_dir, "candidate_predictions.csv"), "w", newline="") as f:
         w = _csv.writer(f)
-        w.writerow(["rank", "compound", "disease", "baseline_score", "gnn_score", "ensemble_score"])
-        for rank, i in enumerate(sorted(range(len(unknown_pairs)), key=lambda i: -ensemble[i])[:50], 1):
+        w.writerow(["rank", "compound", "disease", "baseline_score", "gnn_score",
+                     "ensemble_score", "flags", "drug_modality"])
+        for rank, i in enumerate(order[:100], 1):
             c, d = unknown_pairs[i]
             w.writerow([rank, node_names[c], node_names[d],
                         round(float(baseline_unknown_scores[i]), 4),
                         round(float(gnn_unknown_scores[i]), 4),
-                        round(float(ensemble[i]), 4)])
+                        round(float(ensemble[i]), 4),
+                        ";".join(classify(i)),
+                        drug_class(node_names[c])])
     with open(os.path.join(out_dir, "metrics.csv"), "w", newline="") as f:
         w = _csv.writer(f)
         w.writerow(["model", "auroc", "average_precision", f"precision_at_{k}"])
         w.writerow(["metapath_logreg_baseline", round(auc_baseline, 4), round(ap_baseline, 4), round(p_at_k_baseline, 4)])
         w.writerow(["relational_gnn_numpy", round(auc_gnn, 4), round(ap_gnn, 4), round(p_at_k_gnn, 4)])
-    print(f"\nSaved: output/candidate_predictions.csv (top 50), output/metrics.csv")
+    print(f"\nSaved: output/candidate_predictions.csv (top 100, with flags column), output/metrics.csv")
 
     return {
         "baseline_auc": auc_baseline,
         "gnn_auc": auc_gnn,
         "top_candidates": [(node_names[unknown_pairs[i][0]], node_names[unknown_pairs[i][1]], float(ensemble[i]))
-                            for i in top_idx],
+                            for i in top_novel],
     }
 
 

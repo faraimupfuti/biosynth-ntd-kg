@@ -116,6 +116,15 @@ detection, etc.), and it is NOT a clinical decision tool — see the
 "NEXT STAGES" notes at the bottom of this file for what real clinical-grade
 validation would still require (wet-lab work, regulatory review, expert
 pharmacology review of every flagged candidate).
+
+--------------------------------------------------------------------------
+PATCH (applied by Claude, see chat) -- fixed request_with_retry() so a 404
+(e.g. openFDA has no label for an investigational/non-approved drug -- an
+EXPECTED outcome, not a transient error) fails fast instead of burning
+~15s of pointless exponential-backoff retries per call. Only genuinely
+transient statuses (429/500/502/503/504) still retry. Everything else in
+this file is unchanged from the original.
+--------------------------------------------------------------------------
 """
 
 import argparse
@@ -155,13 +164,21 @@ def request_with_retry(method: str, url: str, *, max_retries: int = 4,
                         base_delay: float = 2.0, **kwargs) -> requests.Response:
     """Shared retry/backoff wrapper for every outbound call in this script.
 
-    The public EBI (ChEMBL) and Open Targets endpoints are free services —
+    The public EBI (ChEMBL) and Open Targets endpoints are free services --
     they occasionally return 500/502/503/504 under load, or 429 if you're
     hitting them fast. Without this, a single transient error kills the
-    entire run (that's exactly what happened on CHEMBL227 in the first live
-    test — the target has a very large mechanism list and the free server
-    timed out on it once). Retries with exponential backoff + jitter turn a
-    one-off blip into a few extra seconds instead of a failed run.
+    entire run. Retries with exponential backoff + jitter turn a one-off
+    blip into a few extra seconds instead of a failed run.
+
+    IMPORTANT: only 429/500/502/503/504 are treated as retryable. A 404
+    (e.g. openFDA has no drug label for an investigational/non-approved
+    compound -- common and EXPECTED here, since many repurposing
+    candidates aren't FDA-approved yet) is not transient and will never
+    succeed on retry -- retrying it just burns ~15s of backoff per call
+    for nothing. It's raised immediately on the first attempt instead, so
+    callers that already catch requests.RequestException (see
+    openfda_label_flags / openfda_serious_ae_count) get a fast, clean
+    "not found" instead of a slow, noisy one.
     """
     last_exc = None
     for attempt in range(1, max_retries + 1):
@@ -170,10 +187,20 @@ def request_with_retry(method: str, url: str, *, max_retries: int = 4,
             if resp.status_code in (429, 500, 502, 503, 504):
                 raise requests.exceptions.HTTPError(
                     f"{resp.status_code} on attempt {attempt}", response=resp)
-            resp.raise_for_status()
+            resp.raise_for_status()  # raises for other 4xx (e.g. 404) -- NOT retried, see below
             return resp
-        except (requests.exceptions.HTTPError, requests.exceptions.ConnectionError,
-                requests.exceptions.Timeout) as e:
+        except requests.exceptions.HTTPError as e:
+            status = e.response.status_code if e.response is not None else None
+            if status not in (429, 500, 502, 503, 504):
+                raise  # non-transient (e.g. 404) -- fail fast, don't waste time retrying
+            last_exc = e
+            if attempt == max_retries:
+                break
+            delay = base_delay * (2 ** (attempt - 1)) + random.uniform(0, 1)
+            print(f"    [retry] {url.split('?')[0]} failed ({e}); "
+                  f"retrying in {delay:.1f}s ({attempt}/{max_retries})", file=sys.stderr)
+            time.sleep(delay)
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
             last_exc = e
             if attempt == max_retries:
                 break
@@ -447,7 +474,9 @@ def openfda_label_flags(drug_name: str) -> dict:
     Lucene search over openfda.generic_name), so brand names, salts, or
     naming mismatches with ChEMBL's pref_name will legitimately miss —
     that's a real coverage gap to be aware of, not a bug to silently paper
-    over with fuzzy matching that could attach the wrong drug's label."""
+    over with fuzzy matching that could attach the wrong drug's label.
+    A 404 here (no label at all -- common for investigational drugs) now
+    fails fast instead of retrying, thanks to the request_with_retry patch."""
     try:
         r = request_with_retry("GET", f"{OPENFDA_URL}/drug/label.json", params={
             "search": f'openfda.generic_name:"{drug_name}"', "limit": 1,

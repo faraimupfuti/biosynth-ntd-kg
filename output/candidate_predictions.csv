@@ -1,51 +1,101 @@
-rank,compound,disease,baseline_score,gnn_score,ensemble_score
-1,Fexinidazole,Chagas disease,0.547,1.0,0.985
-2,Benznidazole,Human African trypanosomiasis,0.5795,1.0,0.9551
-3,Melarsoprol,Chagas disease,0.5392,1.0,0.9551
-4,Auranofin,Chagas disease,0.4488,1.0,0.9487
-5,Doxycycline,Trachoma,0.6793,0.9999,0.9402
-6,Auranofin,Human African trypanosomiasis,0.4517,1.0,0.9316
-7,Mebendazole,Taeniasis/Cysticercosis,0.5792,0.9993,0.8868
-8,Pentamidine,Chagas disease,0.4483,0.9997,0.8803
-9,Benznidazole,Leishmaniasis,0.5383,0.9992,0.8568
-10,Rifampicin,Trachoma,0.4421,1.0,0.8526
-11,Rifampicin,Chagas disease,0.4421,1.0,0.8462
-12,Rifampicin,Human African trypanosomiasis,0.4421,1.0,0.8269
-13,Nifurtimox,Leishmaniasis,0.5383,0.997,0.8162
-14,Auranofin,Trachoma,0.4421,0.9994,0.8141
-15,Mebendazole,Lymphatic filariasis,0.542,0.9952,0.8013
-16,Dapsone,Chagas disease,0.4421,1.0,0.7991
-17,Niclosamide,Schistosomiasis,0.4421,0.9984,0.7906
-18,Niclosamide,Trachoma,0.4421,0.9977,0.7906
-19,Rifampicin,Leishmaniasis,0.4421,0.9998,0.7821
-20,Dapsone,Trachoma,0.4421,0.9995,0.7821
-21,Niclosamide,Echinococcosis,0.4421,0.9987,0.7778
-22,Mebendazole,Echinococcosis,0.4421,1.0,0.7671
-23,Doxycycline,Soil-transmitted helminthiasis,0.4421,0.9999,0.7628
-24,Rifampicin,Taeniasis/Cysticercosis,0.4421,0.9993,0.7564
-25,Mebendazole,Trachoma,0.4421,1.0,0.7543
-26,Rifampicin,Soil-transmitted helminthiasis,0.4421,0.9993,0.7543
-27,Auranofin,Leishmaniasis,0.5623,0.9852,0.75
-28,Fluoxetine,Human African trypanosomiasis,0.5204,0.9895,0.75
-29,Doxycycline,Echinococcosis,0.4421,0.9999,0.7479
-30,Rifampicin,Echinococcosis,0.4421,0.9996,0.7479
-31,Dapsone,Echinococcosis,0.4421,0.9986,0.7415
-32,Doxycycline,Schistosomiasis,0.4421,0.9998,0.7372
-33,Mebendazole,Leprosy,0.4421,0.9999,0.735
-34,Mebendazole,Scabies,0.4421,0.9998,0.7308
-35,Ivermectin,Trachoma,0.4421,1.0,0.7286
-36,Clofazimine,Soil-transmitted helminthiasis,0.4421,0.9958,0.7244
-37,Doxycycline,Taeniasis/Cysticercosis,0.4421,0.9997,0.7179
-38,Melarsoprol,Leishmaniasis,0.5383,0.9792,0.7137
-39,Doxycycline,Scabies,0.4421,0.999,0.7094
-40,Auranofin,Echinococcosis,0.4421,0.9852,0.7073
-41,Ivermectin,Schistosomiasis,0.4421,1.0,0.6987
-42,Rifampicin,Schistosomiasis,0.4421,0.9969,0.6987
-43,Dapsone,Taeniasis/Cysticercosis,0.4421,0.9957,0.6987
-44,Fluoxetine,Onchocerciasis,0.4421,0.9805,0.6923
-45,Ivermectin,Echinococcosis,0.4421,1.0,0.6859
-46,Clofazimine,Schistosomiasis,0.4421,0.9889,0.6816
-47,Ivermectin,Leishmaniasis,0.4421,0.9999,0.6795
-48,Ivermectin,Chagas disease,0.4421,0.9999,0.6774
-49,Albendazole,Taeniasis/Cysticercosis,0.5792,0.9575,0.6774
-50,Niclosamide,Chagas disease,0.4421,0.9836,0.6774
+rank,compound,disease,baseline_score,gnn_score,ensemble_score,flags,drug_modality
+1,Doxycycline,Trachoma,0.537,1.0,0.9964,already_treats_other_disease,likely_small_molecule
+2,Mebendazole,Lymphatic filariasis,0.5162,1.0,0.9964,already_treats_other_disease,likely_small_molecule
+3,Benznidazole,Human African trypanosomiasis,0.5295,1.0,0.9924,already_treats_other_disease,likely_small_molecule
+4,LIGELIZUMAB,Echinococcosis,0.5181,1.0,0.9881,,monoclonal_antibody
+5,LEVAMISOLE HYDROCHLORIDE,Onchocerciasis,0.5058,1.0,0.9879,,likely_small_molecule
+6,TALIZUMAB,Echinococcosis,0.5181,1.0,0.9877,,monoclonal_antibody
+7,AL-901,Echinococcosis,0.5181,1.0,0.9849,,code_named_unclear_modality
+8,Melarsoprol,Chagas disease,0.5019,1.0,0.9834,already_treats_other_disease,likely_small_molecule
+9,OMALIZUMAB,Echinococcosis,0.5181,1.0,0.983,,monoclonal_antibody
+10,SCH-708980,Onchocerciasis,0.5106,1.0,0.9801,,code_named_unclear_modality
+11,QUILIZUMAB,Echinococcosis,0.5181,1.0,0.9768,,monoclonal_antibody
+12,MEDI-4212,Echinococcosis,0.5181,1.0,0.9761,,code_named_unclear_modality
+13,CHEMBL4211638,Onchocerciasis,0.4738,1.0,0.9716,unresolved_chembl_id,code_named_unclear_modality
+14,LIGELIZUMAB,Onchocerciasis,0.505,0.9999,0.9638,,monoclonal_antibody
+15,CHEMBL4211638,Lymphatic filariasis,0.4738,1.0,0.9632,unresolved_chembl_id,code_named_unclear_modality
+16,CHEMBL4211638,Trachoma,0.4738,1.0,0.9609,unresolved_chembl_id,code_named_unclear_modality
+17,ABX-IL8,Trachoma,0.5072,0.9999,0.9602,,code_named_unclear_modality
+18,CHEMBL5190082,Onchocerciasis,0.4738,1.0,0.9601,unresolved_chembl_id,code_named_unclear_modality
+19,AL-901,Onchocerciasis,0.505,0.9999,0.9591,,code_named_unclear_modality
+20,INTERFERON GAMMA-1B,Echinococcosis,0.523,0.9999,0.9583,,biologic_other
+21,Auranofin,Human African trypanosomiasis,0.4783,1.0,0.9561,,likely_small_molecule
+22,ROMILKIMAB,Schistosomiasis,0.4957,0.9999,0.956,,monoclonal_antibody
+23,Pentamidine,Chagas disease,0.4759,1.0,0.955,already_treats_other_disease,likely_small_molecule
+24,CHEMBL5190082,Trachoma,0.4738,1.0,0.9519,unresolved_chembl_id,code_named_unclear_modality
+25,CM-082,Schistosomiasis,0.4943,0.9999,0.9513,,code_named_unclear_modality
+26,Auranofin,Chagas disease,0.4761,0.9999,0.9484,,likely_small_molecule
+27,HYDROCORTISONE SODIUM SUCCINATE,Scabies,0.4994,0.9999,0.9474,,likely_small_molecule
+28,CHEMBL5194207,Onchocerciasis,0.4738,1.0,0.9467,unresolved_chembl_id,code_named_unclear_modality
+29,CHEMBL4211638,Schistosomiasis,0.4738,0.9999,0.9467,unresolved_chembl_id,code_named_unclear_modality
+30,CHEMBL5194207,Trachoma,0.4738,1.0,0.9462,unresolved_chembl_id,code_named_unclear_modality
+31,TORALIZUMAB,Chagas disease,0.4738,1.0,0.9461,,monoclonal_antibody
+32,OMALIZUMAB,Onchocerciasis,0.505,0.9997,0.9427,,monoclonal_antibody
+33,CHEMBL5203342,Onchocerciasis,0.4738,1.0,0.9406,unresolved_chembl_id,code_named_unclear_modality
+34,CHEMBL5190082,Lymphatic filariasis,0.4738,0.9999,0.9394,unresolved_chembl_id,code_named_unclear_modality
+35,CHEMBL2062136,Onchocerciasis,0.4738,1.0,0.9378,unresolved_chembl_id,code_named_unclear_modality
+36,QUILIZUMAB,Onchocerciasis,0.505,0.9996,0.9372,,monoclonal_antibody
+37,Fluoxetine,Human African trypanosomiasis,0.5058,0.9996,0.9367,,likely_small_molecule
+38,ERLIZUMAB,Lymphatic filariasis,0.5145,0.9995,0.9339,,monoclonal_antibody
+39,TORALIZUMAB,Schistosomiasis,0.4738,1.0,0.9328,,monoclonal_antibody
+40,DAZODALIBEP,Chagas disease,0.4738,1.0,0.9324,,code_named_unclear_modality
+41,CHEMBL5184855,Onchocerciasis,0.4738,0.9999,0.9304,unresolved_chembl_id,code_named_unclear_modality
+42,ANRUKINZUMAB,Schistosomiasis,0.4957,0.9996,0.9294,,monoclonal_antibody
+43,CHEMBL5203342,Lymphatic filariasis,0.4738,0.9999,0.929,unresolved_chembl_id,code_named_unclear_modality
+44,MLNM-2201,Lymphatic filariasis,0.5145,0.9993,0.9272,,code_named_unclear_modality
+45,CHEMBL5203342,Trachoma,0.4738,0.9999,0.9271,unresolved_chembl_id,code_named_unclear_modality
+46,CHEMBL5184855,Lymphatic filariasis,0.4738,0.9999,0.9261,unresolved_chembl_id,code_named_unclear_modality
+47,CHEMBL5206850,Onchocerciasis,0.4738,0.9998,0.9259,unresolved_chembl_id,code_named_unclear_modality
+48,NNC0114-0006,Echinococcosis,0.5192,0.9992,0.9255,,likely_small_molecule
+49,CHEMBL2062136,Lymphatic filariasis,0.4738,0.9999,0.9253,unresolved_chembl_id,code_named_unclear_modality
+50,CHEMBL5184855,Trachoma,0.4738,0.9998,0.9249,unresolved_chembl_id,code_named_unclear_modality
+51,CHEMBL2062136,Trachoma,0.4738,0.9999,0.9244,unresolved_chembl_id,code_named_unclear_modality
+52,CHEMBL4211638,Taeniasis/Cysticercosis,0.4738,0.9996,0.9242,unresolved_chembl_id,code_named_unclear_modality
+53,CHEMBL5194207,Lymphatic filariasis,0.4738,0.9998,0.9241,unresolved_chembl_id,code_named_unclear_modality
+54,MEDI-4212,Onchocerciasis,0.505,0.9993,0.9236,,code_named_unclear_modality
+55,CHEMBL3125916,Schistosomiasis,0.4738,0.9998,0.9232,unresolved_chembl_id,code_named_unclear_modality
+56,TEGOPRUBART,Chagas disease,0.4738,1.0,0.9229,,code_named_unclear_modality
+57,SENICAPOC,Yaws,0.5563,0.9991,0.9229,,code_named_unclear_modality
+58,RAVAGALIMAB,Chagas disease,0.4738,1.0,0.9222,,monoclonal_antibody
+59,MLN-01,Lymphatic filariasis,0.5145,0.9992,0.9221,,code_named_unclear_modality
+60,DAZODALIBEP,Schistosomiasis,0.4738,1.0,0.9221,,code_named_unclear_modality
+61,DUPILUMAB,Schistosomiasis,0.4991,0.9994,0.922,,monoclonal_antibody
+62,BETAMETHASONE,Scabies,0.4994,0.9994,0.9218,,code_named_unclear_modality
+63,CHEMBL165114,Onchocerciasis,0.4738,1.0,0.9197,unresolved_chembl_id,code_named_unclear_modality
+64,CHEMBL5203342,Schistosomiasis,0.4738,0.9998,0.9194,unresolved_chembl_id,code_named_unclear_modality
+65,TEGOPRUBART,Schistosomiasis,0.4738,1.0,0.9194,,code_named_unclear_modality
+66,CHEMBL163668,Trachoma,0.4738,1.0,0.9193,unresolved_chembl_id,code_named_unclear_modality
+67,FLUNISOLIDE,Scabies,0.4994,0.9993,0.9191,,code_named_unclear_modality
+68,TALIZUMAB,Onchocerciasis,0.505,0.9991,0.919,,monoclonal_antibody
+69,BAICALIN,Onchocerciasis,0.4738,0.9996,0.9186,,code_named_unclear_modality
+70,CHEMBL165114,Trachoma,0.4738,1.0,0.9185,unresolved_chembl_id,code_named_unclear_modality
+71,CHEMBL4206760,Onchocerciasis,0.4738,0.9996,0.9178,unresolved_chembl_id,code_named_unclear_modality
+72,IMATINIB MESYLATE,Schistosomiasis,0.4943,0.9995,0.9177,,likely_small_molecule
+73,CHEMBL163668,Onchocerciasis,0.4738,1.0,0.917,unresolved_chembl_id,code_named_unclear_modality
+74,CHEMBL163962,Trachoma,0.4738,1.0,0.9168,unresolved_chembl_id,code_named_unclear_modality
+75,CHEMBL5206107,Yaws,0.4738,0.9999,0.9166,unresolved_chembl_id,code_named_unclear_modality
+76,INTERFERON GAMMA-1B,Trachoma,0.4855,0.9994,0.9151,,biologic_other
+77,CHEMBL456850,Onchocerciasis,0.4738,0.9999,0.9151,unresolved_chembl_id,code_named_unclear_modality
+78,CHEMBL2062136,Schistosomiasis,0.4738,0.9998,0.9149,unresolved_chembl_id,code_named_unclear_modality
+79,CHEMBL164620,Trachoma,0.4738,1.0,0.9145,unresolved_chembl_id,code_named_unclear_modality
+80,TEGOPRUBART,Taeniasis/Cysticercosis,0.4738,1.0,0.9138,,code_named_unclear_modality
+81,CHEMBL4211638,Scabies,0.4738,0.9994,0.9138,unresolved_chembl_id,code_named_unclear_modality
+82,CHEMBL163962,Onchocerciasis,0.4738,1.0,0.9133,unresolved_chembl_id,code_named_unclear_modality
+83,CHEMBL5206850,Trachoma,0.4738,0.9997,0.9132,unresolved_chembl_id,code_named_unclear_modality
+84,CHEMBL3125916,Chagas disease,0.4738,0.9996,0.9129,unresolved_chembl_id,code_named_unclear_modality
+85,CHEMBL163962,Chagas disease,0.4738,1.0,0.9127,unresolved_chembl_id,code_named_unclear_modality
+86,TRALOKINUMAB,Schistosomiasis,0.4957,0.9992,0.9121,,monoclonal_antibody
+87,TORALIZUMAB,Echinococcosis,0.4738,1.0,0.9121,,monoclonal_antibody
+88,CHEMBL2447930,Onchocerciasis,0.4738,0.9994,0.912,unresolved_chembl_id,code_named_unclear_modality
+89,CHEMBL3125916,Yaws,0.4738,0.9995,0.9118,unresolved_chembl_id,code_named_unclear_modality
+90,CHEMBL165114,Taeniasis/Cysticercosis,0.4738,1.0,0.9118,unresolved_chembl_id,code_named_unclear_modality
+91,BAICALIN,Trachoma,0.4738,0.9995,0.9116,,code_named_unclear_modality
+92,CHEMBL165221,Trachoma,0.4738,1.0,0.9116,unresolved_chembl_id,code_named_unclear_modality
+93,CHEMBL163668,Lymphatic filariasis,0.4738,1.0,0.9112,unresolved_chembl_id,code_named_unclear_modality
+94,CHEMBL165221,Onchocerciasis,0.4738,1.0,0.9104,unresolved_chembl_id,code_named_unclear_modality
+95,MARIMASTAT,Lymphatic filariasis,0.5093,0.9987,0.9104,,code_named_unclear_modality
+96,CHEMBL5184855,Schistosomiasis,0.4738,0.9997,0.9096,unresolved_chembl_id,code_named_unclear_modality
+97,CHEMBL165562,Trachoma,0.4738,1.0,0.9092,unresolved_chembl_id,code_named_unclear_modality
+98,TORALIZUMAB,Taeniasis/Cysticercosis,0.4738,1.0,0.9088,,monoclonal_antibody
+99,CHEMBL423980,Trachoma,0.4738,1.0,0.9088,unresolved_chembl_id,code_named_unclear_modality
+100,CHEMBL5190082,Schistosomiasis,0.4738,0.9996,0.9087,unresolved_chembl_id,code_named_unclear_modality
