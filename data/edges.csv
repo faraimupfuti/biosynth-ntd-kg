@@ -130,3 +130,12 @@ C:Nifurtimox,causes,SE:Nausea,CcSE,curated_seed_known_ade
 C:Melarsoprol,causes,SE:PeripheralNeuropathy,CcSE,curated_seed_known_ade
 C:AmphotericinB,causes,SE:Hepatotoxicity,CcSE,curated_seed_known_ade
 C:Pentamidine,causes,SE:QTprolongation,CcSE,curated_seed_known_ade
+D:api:1,associated,G:api:1,DaG,source=ntd_kg_pipeline_live_api;assoc_score=0.581
+D:api:1,associated,G:api:2,DaG,source=ntd_kg_pipeline_live_api;assoc_score=0.544
+D:api:1,associated,G:api:3,DaG,source=ntd_kg_pipeline_live_api;assoc_score=0.541
+D:api:1,associated,G:api:4,DaG,source=ntd_kg_pipeline_live_api;assoc_score=0.526
+D:api:1,associated,G:api:5,DaG,source=ntd_kg_pipeline_live_api;assoc_score=0.513
+C:api:1,modulates,G:api:5,CbG,source=ntd_kg_pipeline_live_api
+C:api:1,candidate,D:api:1,CfD,source=ntd_kg_pipeline_live_api;priority_score=65.5;max_phase=3.0;disease_trial_count=0;serious_ae_reports=319
+C:api:2,modulates,G:api:5,CbG,source=ntd_kg_pipeline_live_api
+C:api:2,candidate,D:api:1,CfD,source=ntd_kg_pipeline_live_api;priority_score=80.5;max_phase=4.0;disease_trial_count=2;serious_ae_reports=1

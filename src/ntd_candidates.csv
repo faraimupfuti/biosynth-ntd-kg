@@ -1,0 +1,3 @@
+drug,disease,target,association_score,max_phase,action_type,priority_score,boxed_warning,contraindications,serious_ae_reports,disease_trial_count,disease_max_trial_phase,disease_trial_has_results
+PROTEIN S HUMAN,dengue,PROS1,0.5132923560491462,4.0,EXOGENOUS PROTEIN,80.5,,,1,2,1,True
+PROTHROMBIN COMPLEX CONCENTRATE,dengue,PROS1,0.5132923560491462,3.0,EXOGENOUS PROTEIN,65.5,,,319,0,0,False

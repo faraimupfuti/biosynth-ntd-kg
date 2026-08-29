@@ -114,6 +114,20 @@ def push_to_neo4j():
 
 
 if __name__ == "__main__":
+    # Optional convenience: auto-load a local .env file if python-dotenv
+    # is installed, so you don't have to `source` the credentials file
+    # by hand every terminal session. The .env file itself is
+    # git-ignored (see .gitignore) and never touches version control.
+    try:
+        from dotenv import load_dotenv
+        load_dotenv()
+        NEO4J_URI = os.environ.get("NEO4J_URI", NEO4J_URI)
+        NEO4J_USER = os.environ.get("NEO4J_USER") or os.environ.get("NEO4J_USERNAME", NEO4J_USER)
+        NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", NEO4J_PASSWORD)
+        NEO4J_DATABASE = os.environ.get("NEO4J_DATABASE", NEO4J_DATABASE)
+    except ImportError:
+        pass  # fine -- just means you're relying on `source` or manual export instead
+
     if not NEO4J_PASSWORD:
         print("Set NEO4J_URI, NEO4J_USER, NEO4J_PASSWORD environment variables first")
         print("(Aura gives you these when you create an instance; for Neo4j")

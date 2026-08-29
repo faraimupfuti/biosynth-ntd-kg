@@ -1,0 +1,107 @@
+{
+  "nodes": [
+    {
+      "id": "dengue",
+      "type": "disease",
+      "matched_name": "dengue disease"
+    },
+    {
+      "id": "APOA1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "HAVCR1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "YBX1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "CD209",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "PROS1",
+      "type": "target",
+      "tdr_druggability": null,
+      "tdr_essential": null
+    },
+    {
+      "id": "PROTHROMBIN COMPLEX CONCENTRATE",
+      "type": "drug",
+      "max_phase": "3.0",
+      "action": "EXOGENOUS PROTEIN",
+      "disease_trial_count": 0
+    },
+    {
+      "id": "PROTEIN S HUMAN",
+      "type": "drug",
+      "max_phase": "4.0",
+      "action": "EXOGENOUS PROTEIN",
+      "disease_trial_count": 2
+    }
+  ],
+  "links": [
+    {
+      "source": "dengue",
+      "target": "APOA1",
+      "kind": "associated",
+      "score": 0.58066719453917
+    },
+    {
+      "source": "dengue",
+      "target": "HAVCR1",
+      "kind": "associated",
+      "score": 0.5442191686570667
+    },
+    {
+      "source": "dengue",
+      "target": "YBX1",
+      "kind": "associated",
+      "score": 0.5409211817593593
+    },
+    {
+      "source": "dengue",
+      "target": "CD209",
+      "kind": "associated",
+      "score": 0.5255245193445559
+    },
+    {
+      "source": "dengue",
+      "target": "PROS1",
+      "kind": "associated",
+      "score": 0.5132923560491462
+    },
+    {
+      "source": "PROTHROMBIN COMPLEX CONCENTRATE",
+      "target": "PROS1",
+      "kind": "modulates",
+      "action_type": "EXOGENOUS PROTEIN"
+    },
+    {
+      "source": "PROTHROMBIN COMPLEX CONCENTRATE",
+      "target": "dengue",
+      "kind": "candidate"
+    },
+    {
+      "source": "PROTEIN S HUMAN",
+      "target": "PROS1",
+      "kind": "modulates",
+      "action_type": "EXOGENOUS PROTEIN"
+    },
+    {
+      "source": "PROTEIN S HUMAN",
+      "target": "dengue",
+      "kind": "candidate"
+    }
+  ]
+}
