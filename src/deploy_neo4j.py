@@ -46,8 +46,15 @@ from schema import XREF_FIELDS
 DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data")
 
 NEO4J_URI = os.environ.get("NEO4J_URI", "neo4j+s://<your-instance>.databases.neo4j.io")
-NEO4J_USER = os.environ.get("NEO4J_USER", "neo4j")
+# Aura's exported credentials file uses NEO4J_USERNAME, not NEO4J_USER --
+# accept either so you can `source` that file directly without renaming
+# anything in it.
+NEO4J_USER = os.environ.get("NEO4J_USER") or os.environ.get("NEO4J_USERNAME", "neo4j")
 NEO4J_PASSWORD = os.environ.get("NEO4J_PASSWORD", "")
+# Aura Free instances get a named database (matching the instance ID),
+# not always "neo4j" -- pass it through explicitly rather than relying
+# on the driver's default, which can silently point at the wrong database.
+NEO4J_DATABASE = os.environ.get("NEO4J_DATABASE")  # None = driver default
 
 ALL_XREF_COLUMNS = sorted({col for cols in XREF_FIELDS.values() for col in cols})
 
@@ -67,8 +74,9 @@ def push_to_neo4j():
     edges = load_csv_rows("edges.csv")
 
     driver = GraphDatabase.driver(NEO4J_URI, auth=(NEO4J_USER, NEO4J_PASSWORD))
+    session_kwargs = {"database": NEO4J_DATABASE} if NEO4J_DATABASE else {}
 
-    with driver.session() as session:
+    with driver.session(**session_kwargs) as session:
         # constraint for fast MERGE lookups + de-dup safety on re-runs
         session.run("CREATE CONSTRAINT entity_id IF NOT EXISTS FOR (n:Entity) REQUIRE n.id IS UNIQUE")
 
